@@ -1,0 +1,6 @@
+python3-pyaudio
+vlc
+python3-gi
+gir1.2-gstreamer-1.0
+gstreamer1.0-plugins-base
+gstreamer1.0-plugins-good

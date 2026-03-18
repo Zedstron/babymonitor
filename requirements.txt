@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-socketio
+aiortc
+opencv-python
+numpy
+pydantic
+jinja2
+aiofiles
+python-multipart
+pydub
+requests
+pyaudio
+python-vlc
