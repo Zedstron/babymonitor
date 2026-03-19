@@ -192,3 +192,54 @@ button:disabled {
 button:disabled:hover {
     transform: none !important;
 }
+
+/* Floating animation for weather icons */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Slow spin for sun */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 12s linear infinite;
+}
+
+/* Pulse for storm icons */
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Progress bar animation */
+@keyframes progress-fill {
+    from { width: 0%; }
+}
+
+.progress-animate {
+    animation: progress-fill 1s ease-out forwards;
+}
+
+/* Gradient background animation */
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.weather-gradient-animated {
+    background-size: 200% 200%;
+    animation: gradient-shift 15s ease infinite;
+}

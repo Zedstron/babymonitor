@@ -16,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List, Optional, AsyncGenerator
 from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
+from weather import get_current_weather
+from dotenv import load_dotenv
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate
@@ -25,6 +27,8 @@ from controllers.media import MediaController
 from controllers.audio import AudioController, MicrophoneTrack
 from controllers.camera import CameraController, CameraVideoTrack
 from controllers.gpio import GPIOController, IndicatorColor, IndicatorState
+
+load_dotenv()
 
 logging.basicConfig(
     level = logging.INFO,
@@ -145,7 +149,9 @@ class AppState:
             "buzzer_enabled": False,
             "video_quality": "high",
             "video_resolution": "1080",
-            "video_fps": "30"
+            "video_fps": "30",
+            "latitude": 33.69186440015098, 
+            "longitude": 72.82942605084591
         }
         try:
             if os.path.exists(self.settings_file):
@@ -707,7 +713,8 @@ def get_template_context() -> dict:
         "total_pages_snapshots": snapshots_data.get("total_pages", 1),
         "storage_media": get_storage("audio"),
         "volume": audio.get_volume(),
-        "baby_audio": state.audio_listen_enabled
+        "baby_audio": state.audio_listen_enabled,
+        "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"])
     }
 
 async def add_notification(message: str):
