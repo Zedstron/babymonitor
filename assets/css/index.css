@@ -243,3 +243,36 @@ button:disabled:hover {
     background-size: 200% 200%;
     animation: gradient-shift 15s ease infinite;
 }
+
+/* Shimmer effect for storage bar */
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite;
+}
+
+/* Circular progress transition */
+circle {
+    transition: stroke-dashoffset 1s ease-out;
+}
+
+/* Bar chart animation */
+.bg-gradient-to-t {
+    animation: grow-up 1s ease-out forwards;
+}
+
+@keyframes grow-up {
+    from { height: 0%; }
+}
+
+/* Pulse for status indicators */
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.animate-status-pulse {
+    animation: status-pulse 2s infinite;
+}

@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, AsyncGenerator
 from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
 from weather import get_current_weather
+from resources import get_system_health
 from dotenv import load_dotenv
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form
@@ -658,6 +659,14 @@ async def stop_record(request: Request):
     recorder = None
     return { "status": True, "message": "Recording has been saved" }
 
+@app.get("/api/health")
+async def get_health_data():
+    return {
+        "status": "success",
+        "timestamp": datetime.now().isoformat(),
+        "data": get_system_health()
+    }
+
 @app.post("/api/recording/start")
 async def start_record(request: Request):
     global recorder
@@ -714,6 +723,7 @@ def get_template_context() -> dict:
         "storage_media": get_storage("audio"),
         "volume": audio.get_volume(),
         "baby_audio": state.audio_listen_enabled,
+        "health": get_system_health(),
         "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"])
     }
 

@@ -12,3 +12,4 @@ pydub
 requests
 pyaudio
 python-vlc
+psutil

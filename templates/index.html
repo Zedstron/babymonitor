@@ -72,6 +72,9 @@
             <button onclick="switchTab('weather')" id="nav-weather" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200">
                 <i class="fa-solid fa-cloud w-5"></i> Outside Weather
             </button>
+            <button onclick="switchTab('health')" id="nav-health" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200">
+                <i class="fa-solid fa-gauge-high w-5"></i> Resource Usage
+            </button>
             <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200">
                 <i class="fa-solid fa-sliders w-5"></i> Settings
             </button>
@@ -1442,6 +1445,409 @@
     </div>
 </div>
 
+<div id="health" class="tab-content bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden dark-mode-transition">
+    
+    <!-- Header -->
+    <div class="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50/50 to-indigo-50/50 dark:from-slate-800/50 dark:to-slate-800/50 dark-mode-transition">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50">
+                    <i class="fa-solid fa-microchip text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 dark-mode-transition">
+                        Device Health
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">
+                        Raspberry Pi 4 System Monitor
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="health-last-update" class="text-xs text-slate-400 dark:text-slate-500 dark-mode-transition">Last updated: --:--:--</span>
+                <button onclick="refreshHealthData()" class="w-8 h-8 rounded-lg bg-white/20 backdrop-blur text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center" title="Refresh Now">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-sm font-medium text-emerald-600 dark:text-emerald-400 dark-mode-transition">Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="p-6">
+        
+        <!-- Top Row: CPU & RAM Circular Progress -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            
+            <!-- CPU Usage (Large Circular) -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 dark-mode-transition relative overflow-hidden">
+                <!-- Background Pattern -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <i class="fa-solid fa-microchip text-primary text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-100 dark-mode-transition">CPU Usage</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Quad-Core ARM Cortex</p>
+                            </div>
+                        </div>
+                        <span id="cpu-percent" class="text-2xl font-bold text-primary dark-mode-transition">{{ health.cpu_percent|int }}%</span>
+                    </div>
+                    
+                    <!-- Circular Progress -->
+                    <div class="flex justify-center">
+                        <div class="relative w-40 h-40">
+                            <!-- Background Circle -->
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="12" fill="none" class="text-slate-200 dark:text-slate-700"></circle>
+                                <!-- Progress Circle -->
+                                <circle id="cpu-circle" cx="80" cy="80" r="70" stroke="currentColor" stroke-width="12" fill="none" 
+                                        stroke-dasharray="{{ 2 * 3.14159 * 70 }}" 
+                                        stroke-dashoffset="{{ (2 * 3.14159 * 70) * (1 - health.cpu_percent / 100) }}"
+                                        stroke-linecap="round"
+                                        class="text-primary transition-all duration-1000 ease-out"
+                                        style="filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));"></circle>
+                            </svg>
+                            <!-- Center Content -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <i class="fa-solid fa-microchip text-3xl text-primary mb-1"></i>
+                                <span id="cpu-circle-percent" class="text-3xl font-bold text-slate-800 dark:text-slate-100 dark-mode-transition">{{ health.cpu_percent|int }}%</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Load</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CPU Cores Info -->
+                    <div class="mt-4 grid grid-cols-4 gap-2">
+                        {% for core in health.cpu_cores %}
+                        <div class="text-center">
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 dark-mode-transition">Core {{ loop.index }}</p>
+                            <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
+                                <div id="cpu-core-{{ loop.index }}-bar" class="h-full bg-gradient-to-r from-primary to-indigo-600 rounded-full transition-all duration-500" style="width: {{ core }}%"></div>
+                            </div>
+                            <p id="cpu-core-{{ loop.index }}-value" class="text-[10px] font-medium text-slate-600 dark:text-slate-300 mt-1 dark-mode-transition">{{ core|int }}%</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RAM Usage (Smaller Circular) -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 dark-mode-transition relative overflow-hidden">
+                <!-- Background Pattern -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                <i class="fa-solid fa-memory text-purple-500 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-100 dark-mode-transition">Memory</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">{{ health.ram_total_gb }}GB Total</p>
+                            </div>
+                        </div>
+                        <span id="ram-percent" class="text-2xl font-bold text-purple-500 dark-mode-transition">{{ health.ram_percent|int }}%</span>
+                    </div>
+                    
+                    <!-- Circular Progress -->
+                    <div class="flex justify-center">
+                        <div class="relative w-32 h-32">
+                            <!-- Background Circle -->
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="64" cy="64" r="56" stroke="currentColor" stroke-width="10" fill="none" class="text-slate-200 dark:text-slate-700"></circle>
+                                <!-- Progress Circle -->
+                                <circle id="ram-circle" cx="64" cy="64" r="56" stroke="currentColor" stroke-width="10" fill="none" 
+                                        stroke-dasharray="{{ 2 * 3.14159 * 56 }}" 
+                                        stroke-dashoffset="{{ (2 * 3.14159 * 56) * (1 - health.ram_percent / 100) }}"
+                                        stroke-linecap="round"
+                                        class="text-purple-500 transition-all duration-1000 ease-out"
+                                        style="filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));"></circle>
+                            </svg>
+                            <!-- Center Content -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <i class="fa-solid fa-memory text-2xl text-purple-500 mb-1"></i>
+                                <span id="ram-circle-percent" class="text-2xl font-bold text-slate-800 dark:text-slate-100 dark-mode-transition">{{ health.ram_percent|int }}%</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Used</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- RAM Details -->
+                    <div class="mt-4 space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-500 dark:text-slate-400 dark-mode-transition">Used</span>
+                            <span id="ram-used" class="font-medium text-slate-700 dark:text-slate-100 dark-mode-transition">{{ health.ram_used_gb }}GB / <span id="ram-total">{{ health.ram_total_gb }}GB</span></span>
+                        </div>
+                        <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div id="ram-bar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500" style="width: {{ health.ram_percent }}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400 dark:text-slate-500 dark-mode-transition">Available</span>
+                            <span id="ram-available" class="font-medium text-slate-600 dark:text-slate-300 dark-mode-transition">{{ health.ram_available_gb }}GB free</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Storage Usage -->
+        <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 mb-6 dark-mode-transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <i class="fa-solid fa-hard-drive text-amber-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-100 dark-mode-transition">Storage</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">SD Card /root</p>
+                    </div>
+                </div>
+                <span id="storage-percent" class="text-2xl font-bold text-amber-500 dark-mode-transition">{{ health.storage_percent|int }}%</span>
+            </div>
+            
+            <!-- Storage Bar -->
+            <div class="relative h-6 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-4">
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-sm font-bold text-slate-700 dark:text-slate-100 dark-mode-transition">
+                        <span id="storage-used">{{ health.storage_used_gb }}GB</span> used of <span id="storage-total">{{ health.storage_total_gb }}GB</span>
+                    </span>
+                </div>
+                <div id="storage-bar" class="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-full transition-all duration-1000 ease-out relative" style="width: {{ health.storage_percent }}%">
+                    <!-- Animated shine effect -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-shimmer"></div>
+                </div>
+            </div>
+            
+            <!-- Storage Breakdown -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="text-center p-3 bg-white dark:bg-slate-700/50 rounded-xl">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition mb-1">System</p>
+                    <p id="storage-system" class="text-lg font-bold text-slate-700 dark:text-slate-100 dark-mode-transition">{{ health.storage_system_gb }}GB</p>
+                </div>
+                <div class="text-center p-3 bg-white dark:bg-slate-700/50 rounded-xl">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition mb-1">Data</p>
+                    <p id="storage-data" class="text-lg font-bold text-slate-700 dark:text-slate-100 dark-mode-transition">{{ health.storage_data_gb }}GB</p>
+                </div>
+                <div class="text-center p-3 bg-white dark:bg-slate-700/50 rounded-xl">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition mb-1">Free</p>
+                    <p id="storage-free" class="text-lg font-bold text-emerald-500 dark-mode-transition">{{ health.storage_free_gb }}GB</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Network Statistics -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            
+            <!-- Network I/O -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 dark-mode-transition">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        <i class="fa-solid fa-network-wired text-cyan-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-100 dark-mode-transition">Network Traffic</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Today's Activity</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <!-- Download -->
+                    <div class="bg-white dark:bg-slate-700/50 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-down text-emerald-500 text-xs"></i>
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Download</span>
+                        </div>
+                        <p id="network-download" class="text-2xl font-bold text-emerald-500 dark-mode-transition">{{ health.network_today_download_mb }} MB</p>
+                        <p id="network-in-speed" class="text-xs text-slate-400 dark:text-slate-500 mt-1 dark-mode-transition">{{ health.network_in_speed }} Mbps</p>
+                    </div>
+                    
+                    <!-- Upload -->
+                    <div class="bg-white dark:bg-slate-700/50 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-up text-blue-500 text-xs"></i>
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Upload</span>
+                        </div>
+                        <p id="network-upload" class="text-2xl font-bold text-blue-500 dark-mode-transition">{{ health.network_today_upload_mb }} MB</p>
+                        <p id="network-out-speed" class="text-xs text-slate-400 dark:text-slate-500 mt-1 dark-mode-transition">{{ health.network_out_speed }} Mbps</p>
+                    </div>
+                </div>
+                
+                <!-- Total Today -->
+                <div class="flex items-center justify-between p-3 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl">
+                    <span class="text-sm text-slate-600 dark:text-slate-300 dark-mode-transition">Total Today</span>
+                    <span id="network-total" class="text-lg font-bold text-cyan-600 dark:text-cyan-400 dark-mode-transition">{{ health.network_today_total_mb }} MB</span>
+                </div>
+            </div>
+            
+            <!-- 7-Day Bandwidth Trend -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 dark-mode-transition">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                            <i class="fa-solid fa-chart-line text-indigo-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-100 dark-mode-transition">Bandwidth Trend</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Last 7 Days</p>
+                        </div>
+                    </div>
+                    <span id="bandwidth-week-total" class="text-xs font-medium text-indigo-500 dark-mode-transition">{{ health.bandwidth_week_total_gb }} GB this week</span>
+                </div>
+                
+                <!-- Bar Chart -->
+                <div class="flex items-end justify-between gap-2 h-32 mb-4">
+                    {% for day in health.bandwidth_7day %}
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-t-lg relative overflow-hidden" style="height: 100%;">
+                            <div class="bandwidth-bar-{{ loop.index }} absolute bottom-0 w-full bg-gradient-to-t from-indigo-500 to-purple-500 rounded-t-lg transition-all duration-500" 
+                                 style="height: {{ (day.mb / health.bandwidth_7day_max_mb * 100)|int }}%;"></div>
+                        </div>
+                        <span class="bandwidth-label-{{ loop.index }} text-[10px] text-slate-500 dark:text-slate-400 dark-mode-transition">{{ day.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="p-2 bg-white dark:bg-slate-700/50 rounded-lg">
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 dark-mode-transition">Avg/Day</p>
+                        <p id="bandwidth-avg-daily" class="text-sm font-bold text-slate-700 dark:text-slate-100 dark-mode-transition">{{ health.bandwidth_avg_daily_mb }} MB</p>
+                    </div>
+                    <div class="p-2 bg-white dark:bg-slate-700/50 rounded-lg">
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 dark-mode-transition">Peak</p>
+                        <p id="bandwidth-peak" class="text-sm font-bold text-slate-700 dark:text-slate-100 dark-mode-transition">{{ health.bandwidth_peak_mb }} MB</p>
+                    </div>
+                    <div class="p-2 bg-white dark:bg-slate-700/50 rounded-lg">
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 dark-mode-transition">Today</p>
+                        <p class="text-sm font-bold text-indigo-500 dark-mode-transition">{{ health.network_today_total_mb }} MB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Monthly Bandwidth Meter -->
+        <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 mb-6 dark-mode-transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center">
+                        <i class="fa-regular fa-calendar text-rose-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-100 dark-mode-transition">Monthly Bandwidth</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">{{ health.current_month }} {{ health.current_year }}</p>
+                    </div>
+                </div>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300 dark-mode-transition">
+                    <span id="bandwidth-month-used">{{ health.bandwidth_month_used_gb }}</span> / <span id="bandwidth-month-limit">{{ health.bandwidth_month_limit_gb }}</span> GB
+                </span>
+            </div>
+            
+            <!-- Progress Meter -->
+            <div class="relative h-8 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
+                <div id="bandwidth-month-bar" class="h-full bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 rounded-full transition-all duration-1000 ease-out" 
+                     style="width: {{ health.bandwidth_month_percent }}%;"></div>
+                <!-- Segments for visual breaks -->
+                <div class="absolute inset-0 flex">
+                    <div class="w-1/4 h-full border-r border-white/20"></div>
+                    <div class="w-1/4 h-full border-r border-white/20"></div>
+                    <div class="w-1/4 h-full border-r border-white/20"></div>
+                </div>
+            </div>
+            
+            <!-- Meter Labels -->
+            <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+            </div>
+            
+            <!-- Status -->
+            <div class="mt-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span id="bandwidth-month-status" class="text-sm text-emerald-600 dark:text-emerald-400 dark-mode-transition">
+                        {% if health.bandwidth_month_percent < 50 %}Healthy usage{% elif health.bandwidth_month_percent < 75 %}Moderate usage{% elif health.bandwidth_month_percent < 90 %}High usage{% else %}Near limit{% endif %}
+                    </span>
+                </div>
+                <span id="bandwidth-month-remaining" class="text-sm font-medium text-slate-600 dark:text-slate-300 dark-mode-transition">
+                    {{ health.bandwidth_month_remaining_gb }} GB remaining
+                </span>
+            </div>
+        </div>
+        
+        <!-- Bottom Row: Additional Health Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            <!-- Temperature -->
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800 dark-mode-transition">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-temperature-half text-orange-500 text-sm"></i>
+                    <span class="text-xs text-slate-600 dark:text-slate-300 dark-mode-transition">CPU Temp</span>
+                </div>
+                <p id="cpu-temp" class="text-2xl font-bold text-orange-600 dark:text-orange-400 dark-mode-transition">{{ health.cpu_temp }}°C</p>
+                <div class="mt-2 h-1.5 bg-orange-200 dark:bg-orange-900/50 rounded-full overflow-hidden">
+                    <div id="cpu-temp-bar" class="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" 
+                         style="width: {{ [health.cpu_temp / 80 * 100, 100]|min }}%"></div>
+                </div>
+                <p id="cpu-temp-status" class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 dark-mode-transition">
+                    {% if health.cpu_temp < 50 %}Normal{% elif health.cpu_temp < 70 %}Warm{% else %}Hot{% endif %}
+                </p>
+            </div>
+            
+            <!-- Uptime -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 dark-mode-transition">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-regular fa-clock text-blue-500 text-sm"></i>
+                    <span class="text-xs text-slate-600 dark:text-slate-300 dark-mode-transition">Uptime</span>
+                </div>
+                <p id="uptime" class="text-lg font-bold text-blue-600 dark:text-blue-400 dark-mode-transition">{{ health.uptime_formatted }}</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2 dark-mode-transition">
+                    Since <span id="boot-date">{{ health.boot_date }}</span>
+                </p>
+            </div>
+            
+            <!-- Active Processes -->
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800 dark-mode-transition">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-list-check text-emerald-500 text-sm"></i>
+                    <span class="text-xs text-slate-600 dark:text-slate-300 dark-mode-transition">Processes</span>
+                </div>
+                <p id="process-count" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 dark-mode-transition">{{ health.process_count }}</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2 dark-mode-transition">
+                    <span id="top-process">{{ health.top_process }}</span> (top)
+                </p>
+            </div>
+            
+            <!-- Load Average -->
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800 dark-mode-transition">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-chart-simple text-purple-500 text-sm"></i>
+                    <span class="text-xs text-slate-600 dark:text-slate-300 dark-mode-transition">Load Avg</span>
+                </div>
+                <p id="load-avg" class="text-lg font-bold text-purple-600 dark:text-purple-400 dark-mode-transition">{{ health.load_avg }}</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2 dark-mode-transition">
+                    1m / 5m / 15m
+                </p>
+            </div>
+        </div>
+        
+    </div>
+            </div>
+
         </div>
     </main>
 
@@ -1451,6 +1857,7 @@
     <script src="/assets/js/misc.js"></script>
     <script src="/assets/js/audio.js"></script>
     <script src="/assets/js/streaming.js"></script>
+    <script src="/assets/js/resources.js"></script>
     <script src="/assets/js/index.js"></script>
 </body>
 </html>

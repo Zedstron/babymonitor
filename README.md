@@ -40,8 +40,9 @@
 - White Noise for Sleep
 
 ### 💡 Hardware
-- LED Indicator (status via GPIO)
+- LED Indicator (via GPIO)
 - Temp/Humid Sensor (via GPIO)
+- Buzzer indicator (via GPIO)
 
 ### 📊 System Monitoring
 - CPU, RAM, disk, network stats
@@ -60,16 +61,14 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/screenshot1.png" width="45%"/>
-  <img src="assets/screenshot2.png" width="45%"/>
+  <img src="assets/screenshot1.png" width="80%"/>
 </p>
-
----
-
-## 🎬 Demo
-
 <p align="center">
-  <img src="assets/demo.gif" width="70%"/>
+  <img src="assets/screenshot2.png" width="45%"/>
+  <img src="assets/screenshot3.png" width="45%"/>
+</p>
+<p align="center">
+  <img src="assets/screenshot4.png" width="80%"/>
 </p>
 
 ---
@@ -83,32 +82,43 @@
 ### 🔗 Flow
 1. Client connects via domain → Caddy (TLS termination)
 2. Caddy reverse proxies to backend
-3. WireGuard tunnel connects VPS → Home network
+3. WireGuard tunnel connects VPS → Home network (Private Secure VPN)
 4. Raspberry Pi (behind NAT) streams via WebRTC
-5. Signaling handled via FastAPI
 
 ---
 
-## 🔌 GPIO Schematics
+## 🔌 GPIO & Hardware Guidelines
 
 <p align="center">
-  <img src="assets/gpio.png" width="60%"/>
+  <b>CSI Camera Module</b><br><br>
+  <img src="assets/hardware_camera.png" width="80%"/>
+</p>
+
+<p align="center">
+  <b>GPIO Pinout Details</b><br><br>
+  <img src="assets/hardware_pinout.png" width="80%"/>
+</p>
+
+<p align="center">
+  <b>Components Schematic Diagram</b><br><br>
+  <img src="assets/hardware_schematic.png" width="80%"/>
 </p>
 
 - LED Indicator wiring (GPIO pins)
-- Sensor integration (Temp/Humidity)
-
----
-
-## 🧪 Project Status
-🚧 Active development — expect bugs & rapid updates
+- Sensor integration (Temp/Humidity) (GPIO pins)
+- Buzzer integration (GPIO pins)
+- Speakers integration (3.5mm Audio Jack)
+- Microphone integration (USB port 2.0 or 3.0)
+- Camera module (CSI camera port)
 
 ---
 
 ## 🔮 Roadmap
-- 🤖 Cry detection (AI)
-- 👶 Occupancy detection
-- 🔔 Push notifications
+- Cry detection (AI)
+- Occupancy detection (Vision or Motion Sensor)
+- Push notifications
+- Facial emotions detection e.g. not feeling comfortable
+- Baby heavy movement e.g. moving outside crib
 
 ---
 
@@ -155,20 +165,5 @@ python main.py
 
 ---
 
-## 🧱 Tech Stack
-- FastAPI
-- WebRTC
-- Jinja2
-- TailwindCSS
-- Vanilla JS
-- Raspberry Pi GPIO
-
----
-
 ## 🤝 Contributing
 PRs welcome
-
----
-
-## ⭐ Support
-Star the repo if useful
