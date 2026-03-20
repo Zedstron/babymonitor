@@ -61,14 +61,17 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/screenshot1.png" width="80%"/>
+  <b>Main Interaction Dashboard</b><br />
+  <img src="assets/screenshot1.png" width="90%"/>
 </p>
 <p align="center">
+  <b>Mediaplayer & Snapshots Gallery</b><br />
   <img src="assets/screenshot2.png" width="45%"/>
   <img src="assets/screenshot3.png" width="45%"/>
 </p>
 <p align="center">
-  <img src="assets/screenshot4.png" width="80%"/>
+  <b>Resource Usage Tracking</b><br />
+  <img src="assets/screenshot4.png" width="90%"/>
 </p>
 
 ---
