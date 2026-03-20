@@ -61,16 +61,16 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <b>Main Interaction Dashboard</b><br />
+  <b>Main Interaction Dashboard</b><br /><br />
   <img src="assets/screenshot1.png" width="90%"/>
 </p>
 <p align="center">
-  <b>Mediaplayer & Snapshots Gallery</b><br />
+  <b>Mediaplayer & Snapshots Gallery</b><br /><br />
   <img src="assets/screenshot2.png" width="45%"/>
   <img src="assets/screenshot3.png" width="45%"/>
 </p>
 <p align="center">
-  <b>Resource Usage Tracking</b><br />
+  <b>Resource Usage Tracking</b><br /><br />
   <img src="assets/screenshot4.png" width="90%"/>
 </p>
 
@@ -79,6 +79,7 @@
 ## 🧠 Architecture (WAN Setup)
 
 <p align="center">
+  <b>Wireguard Secure VPN & Caddy Reverse Proxy Config</b><br /><br />
   <img src="assets/architecture.png" width="80%"/>
 </p>
 
@@ -94,17 +95,17 @@
 
 <p align="center">
   <b>CSI Camera Module</b><br><br>
-  <img src="assets/hardware_camera.png" width="80%"/>
+  <img src="assets/hardware_camera.png" width="90%"/>
 </p>
 
 <p align="center">
   <b>GPIO Pinout Details</b><br><br>
-  <img src="assets/hardware_pinout.png" width="80%"/>
+  <img src="assets/hardware_pinout.png" width="90%"/>
 </p>
 
 <p align="center">
   <b>Components Schematic Diagram</b><br><br>
-  <img src="assets/hardware_schematic.png" width="80%"/>
+  <img src="assets/hardware_schematic.png" width="90%"/>
 </p>
 
 - LED Indicator wiring (GPIO pins)
