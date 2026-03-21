@@ -1,10 +1,10 @@
 let healthMonitor = {
     pollingInterval: null,
-    intervalMs: 30000,
+    intervalMs: 15,
     isPolling: false,
     lastUpdate: null,
     retryCount: 0,
-    maxRetries: 3
+    maxRetries: 0
 };
 
 
@@ -49,6 +49,7 @@ async function fetchHealthData() {
         }
         
     } catch (error) {
+        console.error(error);
         healthMonitor.retryCount++;
 
         if (healthMonitor.retryCount >= healthMonitor.maxRetries) {
@@ -59,7 +60,7 @@ async function fetchHealthData() {
 }
 
 function updateHealthUI(data) {
-    updateElementText('cpu-percent', `${data.cpu_percent|int}%`);
+    updateElementText('cpu-percent', `${data.cpu_percent}%`);
     updateElementText('cpu-temp', `${data.cpu_temp}°C`);
     updateProgressBar('cpu-temp-bar', (data.cpu_temp / 80 * 100), 100);
     updateElementText('cpu-temp-status', getTempStatus(data.cpu_temp));
@@ -67,18 +68,18 @@ function updateHealthUI(data) {
     if (data.cpu_cores && data.cpu_cores.length > 0) {
         data.cpu_cores.forEach((core, index) => {
             updateProgressBar(`cpu-core-${index + 1}`, core, 100);
-            updateElementText(`cpu-core-${index + 1}-value`, `${core|int}%`);
+            updateElementText(`cpu-core-${index + 1}-value`, `${core}%`);
         });
     }
     
-    updateElementText('ram-percent', `${data.ram_percent|int}%`);
+    updateElementText('ram-percent', `${data.ram_percent}%`);
     updateElementText('ram-used', `${data.ram_used_gb}GB`);
     updateElementText('ram-total', `${data.ram_total_gb}GB`);
     updateElementText('ram-available', `${data.ram_available_gb}GB`);
     updateProgressBar('ram-bar', data.ram_percent, 100);
     updateCircularProgress('ram-circle', data.ram_percent);
 
-    updateElementText('storage-percent', `${data.storage_percent|int}%`);
+    updateElementText('storage-percent', `${data.storage_percent}%`);
     updateElementText('storage-used', `${data.storage_used_gb}GB`);
     updateElementText('storage-total', `${data.storage_total_gb}GB`);
     updateElementText('storage-free', `${data.storage_free_gb}GB`);

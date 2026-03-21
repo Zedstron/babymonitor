@@ -215,3 +215,6 @@ recordings/*
 
 # Settings JSON file
 settings.json
+
+# Databases
+*.db

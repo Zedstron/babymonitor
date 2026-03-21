@@ -25,7 +25,7 @@ def parse_current(data):
         "pressure": pressure,
         "status": data["weather"][0]["main"],
         "description": data["weather"][0]["description"],
-        "icon": data["weather"][0]["main"],
+        "icon": data["weather"][0]["icon"],
         "is_day": is_day,
         "visibility": data["visibility"],
         "rain_1h": rain_1h,
@@ -45,12 +45,18 @@ def get_air_quality(lat, lon, key):
     }
 
 def get_current_weather(longitude, latitude):
-    API_KEY = os.environ.get("OPENWEATHER_KEY")
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={API_KEY}&units=metric"
+    try:
+        API_KEY = os.environ.get("OPENWEATHER_KEY")
+        if not API_KEY:
+            return None
 
-    res = requests.get(url)
-    data = parse_current(res.json())
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={API_KEY}&units=metric"
 
-    data["wind"].update(get_air_quality(latitude, longitude, API_KEY))
+        res = requests.get(url)
+        data = parse_current(res.json())
 
-    return data
+        data["wind"].update(get_air_quality(latitude, longitude, API_KEY))
+
+        return data
+    except:
+        return None

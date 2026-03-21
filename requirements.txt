@@ -13,3 +13,4 @@ requests
 pyaudio
 python-vlc
 psutil
+python-jose[cryptography]

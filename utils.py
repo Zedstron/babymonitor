@@ -5,6 +5,8 @@ import time
 import requests
 from datetime import datetime
 from pathlib import Path
+from sqlalchemy.orm import Session
+from helpers.database import User
 
 TEST_SERVERS = [
     "https://ash-speed.hetzner.com/10MB.bin",
@@ -147,3 +149,6 @@ def format_uptime(seconds: float) -> str:
     mins = int((seconds % 3600) // 60)
     secs = int(seconds % 60)
     return f"{hrs:02d}:{mins:02d}:{secs:02d}"
+
+def check_new_install(db: Session):
+    return db.query(User).count() == 0

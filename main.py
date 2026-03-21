@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import cv2
 import json
@@ -9,6 +12,7 @@ import socketio
 from models import *
 from pathlib import Path
 from datetime import datetime
+from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -16,20 +20,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List, Optional, AsyncGenerator
 from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
-from weather import get_current_weather
-from resources import get_system_health
-from dotenv import load_dotenv
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
-from fastapi import FastAPI, Request, HTTPException, Response, File, Form
-from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceCandidate
+from helpers.weather import get_current_weather
+from helpers.resources import get_system_health
+from helpers.database import get_db
+from helpers.tokenizer import create_token, decode_token
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, Request, HTTPException, Response, File, Form, Depends, status
+from aiortc import RTCPeerConnection, RTCSessionDescription
 
 from utils import *
 from controllers.media import MediaController
 from controllers.audio import AudioController, MicrophoneTrack
 from controllers.camera import CameraController, CameraVideoTrack
 from controllers.gpio import GPIOController, IndicatorColor, IndicatorState
+from passlib.context import CryptContext
 
-load_dotenv()
+
 
 logging.basicConfig(
     level = logging.INFO,
@@ -38,6 +44,8 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = logging.getLogger(__name__)
 
 pcs = {}
@@ -48,6 +56,33 @@ audio = AudioController()
 media = MediaController()
 
 recorder = None
+
+EXCLUDED_PATHS = {
+    "/",
+    "/api/auth",
+    "/docs",
+    "/openapi.json",
+}
+
+EXCLUDED_PREFIXES = (
+    "/assets",
+)
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("nursery")
+    if not token:
+        return None
+
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    return db.query(User).filter(User.id == payload.get("id")).first()
+
+def is_excluded(path: str) -> bool:
+    if path in EXCLUDED_PATHS:
+        return True
+    return any(path.startswith(prefix) for prefix in EXCLUDED_PREFIXES)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -99,6 +134,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next, user: User = Depends(get_current_user)):
+    path = request.url.path
+
+    if is_excluded(path):
+        return await call_next(request)
+
+    if not user:
+        return RedirectResponse("/", status_code=303)
+
+    response = await call_next(request)
+    return response
 
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 templates = Jinja2Templates(directory="templates")
@@ -204,6 +252,55 @@ async def disconnect(sid):
 async def ping(sid, data):
     await sio.emit("pong", data, to=sid)
 
+@app.get("/", response_class=HTMLResponse)
+async def login_page(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user == None:
+        is_new = check_new_install(db)
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "is_new_install": is_new
+        })
+    
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+@app.get("/logout")
+async def logout(user: User = Depends(get_current_user)):
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie("nursery")
+    return response
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard(request: Request):
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        **get_template_context()
+    })
+
+@app.post("/api/auth")
+async def handle_auth(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    if check_new_install(db):
+        if password != confirm_password:
+            return RedirectResponse(url="/?error=match", status_code=status.HTTP_303_SEE_OTHER)
+
+        hashed = pwd_context.hash(password)
+        db.add(User(username=username, password=hashed))
+        db.commit()
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    else:
+        user = db.query(User).filter(User.username == username).first()
+        if user and pwd_context.verify(password, user.password):
+            res = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+            res.set_cookie(key="nursery", value=create_token({ "id": user.id, "username": user.username }), httponly=True, max_age=60*60*24*7, secure=True, samesite="lax")
+            return res
+
+        return RedirectResponse(url="/?error=auth", status_code=status.HTTP_303_SEE_OTHER)
+
 @app.post("/api/audio/play")
 async def play_audio(request: Request):
     data = await request.body()
@@ -287,13 +384,6 @@ async def candidate(request: Request):
     await pc.addIceCandidate(cand)
 
     return { "status": "ok" }
-
-@app.get("/", response_class=HTMLResponse)
-async def get_dashboard(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
-        **get_template_context()
-    })
 
 @app.post("/api/settings")
 async def update_settings_api(data: SettingsUpdate):

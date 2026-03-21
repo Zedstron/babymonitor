@@ -452,20 +452,12 @@ async function confirmLogout()
 {
     try 
     {
-        await fetch('/api/logout', { method: 'POST' });
-        
-        localStorage.removeItem('auth_token');
-        sessionStorage.clear();
-
+        await fetch('/logout');
         showToast('Signed out successfully', 'success');
 
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1000);
-        
+        setTimeout(() => { window.location.href = '/'; }, 1000);
     } catch (error) {
         console.error('Logout error:', error);
-        localStorage.removeItem('auth_token');
         window.location.href = '/';
     }
 }

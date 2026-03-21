@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nursery OS | Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    animation: { 'float': 'float 6s ease-in-out infinite', 'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        }
+    </script>
+    <style>
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        .glass-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .dark .glass-panel { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: 0; }
+        .input-group:focus-within label { color: #6366f1; }
+        .dark .input-group:focus-within label { color: #818cf8; }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 overflow-hidden relative flex items-center justify-center transition-colors duration-500">
+    <!-- Background Orbs -->
+    <div class="orb w-96 h-96 bg-purple-300 dark:bg-indigo-900 top-0 left-0 animate-float"></div>
+    <div class="orb w-80 h-80 bg-blue-300 dark:bg-purple-900 bottom-0 right-0 animate-float" style="animation-delay: 2s;"></div>
+    <div class="orb w-64 h-64 bg-pink-300 dark:bg-slate-800 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"></div>
+
+    <div class="glass-panel w-full max-w-md p-10 rounded-3xl shadow-2xl relative z-10 transform transition-all hover:scale-[1.01] duration-500">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white text-2xl mb-4 shadow-lg">
+                🌙
+            </div>
+            <h1 class="text-4xl font-bold text-slate-800 dark:text-white tracking-tight">Nursery OS</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-2 font-light">Secure Environment Control</p>
+        </div>
+
+        {% if is_new_install %}
+        <div class="mb-8 relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-500/20 p-4">
+            <div class="flex items-start space-x-3">
+                <span class="text-2xl">👋</span>
+                <div>
+                    <p class="text-indigo-900 dark:text-indigo-100 font-semibold text-sm">Fresh Install Detected</p>
+                    <p class="text-indigo-700 dark:text-indigo-300 text-xs mt-1">Looks like a fresh start! Let's configure this before the little one wakes up. 🍼</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form action="{{ url_for('handle_auth') }}" method="POST" class="space-y-5">
+            <div class="input-group relative">
+                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 ml-1">Identity</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-slate-400">👤</span>
+                    <input type="text" name="username" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all shadow-sm">
+                </div>
+            </div>
+
+            <div class="input-group relative">
+                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 ml-1">Passcode</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-slate-400">🔒</span>
+                    <input type="password" name="password" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all shadow-sm">
+                </div>
+            </div>
+
+            {% if is_new_install %}
+            <div class="input-group relative animate-[float_0.5s_ease-out]">
+                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 ml-1">Verify Passcode</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-3.5 text-slate-400">🔐</span>
+                    <input type="password" name="confirm_password" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all shadow-sm">
+                </div>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="group relative w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+                <div class="absolute inset-0 bg-white/20 group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12 -translate-x-full"></div>
+                <span class="relative flex items-center justify-center">
+                    {{ 'Initialize System' if is_new_install else 'Authenticate' }}
+                    <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </span>
+            </button>
+        </form>
+    </div>
+</body>
+</html>
