@@ -107,7 +107,16 @@ function changeFPS() {
 function toggleNightLight() {
 }
 
-function toggleWhiteNoise() {
+function whiteNoise(status) 
+{
+    fetch("/api/whitenoise/" + status, { 
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    }).then(d => d.json()).then(d => {
+        showToast(d.message, d.status ? "success" : "error");
+    });
 }
 
 function toggleRecording() {

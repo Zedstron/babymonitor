@@ -20,7 +20,7 @@ def sp_to_label(speed):
     
     return label
 
-async def quick_speed_test(duration=4):
+def quick_speed_test():
     st = Speedtest()
     st.get_servers()
     st.get_best_server()
@@ -28,7 +28,10 @@ async def quick_speed_test(duration=4):
     upload_speed = st.upload() / 1_000_000
 
     if download_speed == 0:
-        return {"bandwidth": 0, "label": "No Connection"}
+        return {
+            "download": { "speed": 0, "label": "No Connection" },
+            "upload": { "speed": 0, "label": "No Connection" }
+        }
 
     return {
         "download": { "speed": round(download_speed, 2), "label": sp_to_label(download_speed) },

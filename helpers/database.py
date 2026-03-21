@@ -78,3 +78,16 @@ def get_settings(defaults: dict) -> dict:
 
     db.commit()
     return result
+
+def save_settings(settings: dict):
+    db = next(get_db())
+
+    for key, value in settings.items():
+        existing = db.query(Settings).filter(Settings.key == key).first()
+
+        if existing:
+            existing.value = __serialize(value)
+        else:
+            db.add(Settings(key=key, value=__serialize(value)))
+
+    db.commit()

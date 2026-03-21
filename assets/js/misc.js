@@ -55,8 +55,9 @@ function updateWifiBars(signalStrength) {
     label.className = `text-xs font-medium ${colorClass.replace('bg-', 'text-')} dark-mode-transition`;
 }
 
-function updateBandwidth(mbps) {
-    document.getElementById('bandwidth-value').textContent = `${mbps.toFixed(1)} Mbps`;
+function updateBandwidth(download, upload) {
+    console.log(download);
+    document.getElementById('bandwidth-value').textContent = `${download.speed.toFixed(1)} Mbps`;
 }
 
 function updateLatency(ms) {
@@ -83,14 +84,13 @@ async function loadConnectionData()
     {
         const response = await fetch('/api/connection');
         const data = await response.json();
-
+        console.log(data);
         if (data.uptime) {
             const parts = data.uptime.split(':');
             updateUptime(parseInt(parts[0]), parseInt(parts[1]));
         }
 
         updateWifiBars(data.signalStrength, data.signalLabel);
-        updateBandwidth(parseFloat(data.bandwidth));
     } catch (error) {
         console.error('Error loading connection data:', error);
         updateConnectionStatus(false);

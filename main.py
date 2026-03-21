@@ -22,7 +22,7 @@ from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
 from helpers.weather import get_current_weather
 from helpers.resources import get_system_health
-from helpers.database import get_db, get_settings, get_profile
+from helpers.database import get_db, get_settings, get_profile, save_settings
 from helpers.tokenizer import create_token, decode_token
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form, Depends, status
@@ -186,6 +186,16 @@ class AppState:
         
         self.start_time = time.time()
 
+        try:
+            logger.debug("Please wait current bandwidth is being calculated")
+            self.bandwidth = quick_speed_test()
+        except:
+            logger.warning("Bandwidth calculation failed, skipping")
+            self.bandwidth = {
+                "upload": { "speed": 0, "label": "No Connection" },
+                "download": { "speed": 0, "label": "No Connection" }
+            }
+
         self.user_profile = {
             "profile_pic": "/assets/img/zain.jpeg",
             **get_profile()
@@ -193,9 +203,7 @@ class AppState:
     
     def save_settings(self):
         try:
-            with open(self.settings_file, 'w') as f:
-                json.dump(self.settings, f, indent=2)
-            logger.info("💾 Settings saved")
+            save_settings(self.settings)
         except Exception as e:
             logger.error(f"Settings save error: {e}")
 
@@ -664,12 +672,9 @@ async def capture_snapshot():
 @app.get("/api/connection")
 async def get_connection_stats():
     latency = get_latency()
-    speed = await quick_speed_test()
-
     return JSONResponse({
         "is_connected": latency is not None,
         **get_wifi_signal(),
-        **speed,
         **latency,
         "uptime": format_uptime(time.time() - state.start_time)
     })
@@ -780,7 +785,8 @@ def get_template_context() -> dict:
         "volume": state.current_volume,
         "baby_audio": state.audio_listen_enabled,
         "health": get_system_health(),
-        "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"])
+        "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"]),
+        **state.bandwidth
     }
 
 async def add_notification(message: str):
