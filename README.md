@@ -1,7 +1,7 @@
 # 🍼 BabyGuard — Smart Raspberry Pi Baby Monitor
 
 <p align="center">
-  <img src="assets/banner.png" alt="BabyGuard Banner" width="100%"/>
+  <img src="assets/img/banner.png" alt="BabyGuard Banner" width="100%"/>
 </p>
 
 <p align="center">
@@ -62,16 +62,16 @@
 
 <p align="center">
   <b>Main Interaction Dashboard</b><br /><br />
-  <img src="assets/screenshot1.png" width="90%"/>
+  <img src="assets/img/screenshot1.png" width="90%"/>
 </p>
 <p align="center">
   <b>Mediaplayer & Snapshots Gallery</b><br /><br />
-  <img src="assets/screenshot2.png" width="45%"/>
-  <img src="assets/screenshot3.png" width="45%"/>
+  <img src="assets/img/screenshot2.png" width="45%"/>
+  <img src="assets/img/screenshot3.png" width="45%"/>
 </p>
 <p align="center">
   <b>Resource Usage Tracking</b><br /><br />
-  <img src="assets/screenshot4.png" width="90%"/>
+  <img src="assets/img/screenshot4.png" width="90%"/>
 </p>
 
 ---
@@ -80,7 +80,7 @@
 
 <p align="center">
   <b>Wireguard Secure VPN & Caddy Reverse Proxy Config</b><br /><br />
-  <img src="assets/architecture.png" width="80%"/>
+  <img src="assets/img/architecture.png" width="80%"/>
 </p>
 
 ### 🔗 Flow
@@ -95,17 +95,17 @@
 
 <p align="center">
   <b>CSI Camera Module</b><br><br>
-  <img src="assets/hardware_camera.png" width="90%"/>
+  <img src="assets/img/hardware_camera.png" width="90%"/>
 </p>
 
 <p align="center">
   <b>GPIO Pinout Details</b><br><br>
-  <img src="assets/hardware_pinout.png" width="90%"/>
+  <img src="assets/img/hardware_pinout.png" width="90%"/>
 </p>
 
 <p align="center">
   <b>Components Schematic Diagram</b><br><br>
-  <img src="assets/hardware_schematic.png" width="90%"/>
+  <img src="assets/img/hardware_schematic.png" width="90%"/>
 </p>
 
 - LED Indicator wiring (GPIO pins)
@@ -123,7 +123,7 @@
 - Push notifications
 - Facial emotions detection e.g. not feeling comfortable
 - Baby heavy movement e.g. moving outside crib
-
+- Converting FE side to React/Angular
 ---
 
 ## 🛠️ Installation
@@ -170,4 +170,4 @@ python main.py
 ---
 
 ## 🤝 Contributing
-PRs welcome
+PRs Welcom
