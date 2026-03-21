@@ -6,6 +6,8 @@ class SettingsUpdate(BaseModel):
     cry_detection: Optional[bool] = None
     led_indicator: Optional[bool] = None
     buzzer_enabled: Optional[bool] = None
+    latitude: Optional[str] = None
+    longitude: Optional[str] = None
 
 class VideoSettings(BaseModel):
     resolution: Optional[str] = None

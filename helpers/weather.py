@@ -1,6 +1,24 @@
 import requests
 import os
+from functools import lru_cache
 from datetime import datetime
+from time import time
+
+CACHE_TTL = 1800 # 30 mins
+
+@lru_cache(maxsize=1)
+def _get_current_weather_cached(longitude, latitude, ttl_hash):
+    API_KEY = os.environ.get("OPENWEATHER_KEY")
+    if not API_KEY or not ttl_hash:
+        return None
+
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={API_KEY}&units=metric"
+
+    res = requests.get(url)
+    data = parse_current(res.json())
+    data["wind"].update(get_air_quality(latitude, longitude, API_KEY))
+
+    return data
 
 def parse_current(data):
     temp = data["main"]["temp"]
@@ -46,17 +64,6 @@ def get_air_quality(lat, lon, key):
 
 def get_current_weather(longitude, latitude):
     try:
-        API_KEY = os.environ.get("OPENWEATHER_KEY")
-        if not API_KEY:
-            return None
-
-        url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={API_KEY}&units=metric"
-
-        res = requests.get(url)
-        data = parse_current(res.json())
-
-        data["wind"].update(get_air_quality(latitude, longitude, API_KEY))
-
-        return data
+        return _get_current_weather_cached(longitude, latitude, int(time() // CACHE_TTL))
     except:
         return None

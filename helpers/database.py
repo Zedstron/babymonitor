@@ -1,6 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import json
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./nursery.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -10,8 +11,16 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=True)
     username = Column(String, unique=True, index=True)
-    password = Column(String)
+    password = Column(String, nullable=False)
+    meta = Column(JSON, nullable=False, default=dict)
+
+class Settings(Base):
+    __tablename__ = "settings"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True)
+    value = Column(String)
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,3 +28,53 @@ def get_db():
     db = SessionLocal()
     try: yield db
     finally: db.close()
+
+def __serialize(value):
+    if isinstance(value, (dict, list)):
+        return json.dumps(value)
+    return str(value)
+
+
+def __deserialize(value, default):
+    if value is None:
+        return default
+
+    if isinstance(default, bool):
+        return value.lower() in ("true", "1", "yes")
+
+    if isinstance(default, int):
+        return int(value)
+
+    if isinstance(default, float):
+        return float(value)
+
+    if isinstance(default, (dict, list)):
+        return json.loads(value)
+
+    return value
+
+def get_profile() -> dict:
+    db = next(get_db())
+    user = db.query(User).first()
+    if user:
+        return { "id": user.id, "name": user.username, "email": user.email, "meta": user.meta }
+    
+    return {}
+
+def get_settings(defaults: dict) -> dict:
+    db = next(get_db())
+    result = {}
+
+    existing = {
+        s.key: s for s in db.query(Settings).filter(Settings.key.in_(defaults.keys())).all()
+    }
+
+    for key, default_value in defaults.items():
+        if key not in existing:
+            db.add(Settings(key=key, value=__serialize(default_value)))
+            result[key] = default_value
+        else:
+            result[key] = __deserialize(existing[key].value, default_value)
+
+    db.commit()
+    return result

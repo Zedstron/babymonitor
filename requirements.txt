@@ -14,3 +14,5 @@ pyaudio
 python-vlc
 psutil
 python-jose[cryptography]
+httpx[http2]
+speedtest-cli

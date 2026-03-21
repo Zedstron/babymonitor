@@ -9,7 +9,7 @@ import uuid
 import asyncio
 import logging
 import socketio
-from models import *
+from helpers.models import *
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -22,7 +22,7 @@ from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
 from helpers.weather import get_current_weather
 from helpers.resources import get_system_health
-from helpers.database import get_db
+from helpers.database import get_db, get_settings, get_profile
 from helpers.tokenizer import create_token, decode_token
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form, Depends, status
@@ -35,8 +35,6 @@ from controllers.camera import CameraController, CameraVideoTrack
 from controllers.gpio import GPIOController, IndicatorColor, IndicatorState
 from passlib.context import CryptContext
 
-
-
 logging.basicConfig(
     level = logging.INFO,
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -45,17 +43,12 @@ logging.basicConfig(
     ]
 )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = logging.getLogger(__name__)
-
-pcs = {}
 
 gpio = GPIOController()
 camera = CameraController()
 audio = AudioController()
 media = MediaController()
-
-recorder = None
 
 EXCLUDED_PATHS = {
     "/",
@@ -153,12 +146,11 @@ templates = Jinja2Templates(directory="templates")
 
 class AppState:
     def __init__(self):
-        self.pcs: set = set()
-        self.camera = camera
-        self.audio = audio
+        self.pcs = dict()
+        self.recorder = None
 
-        self.video_track = CameraVideoTrack(self.camera)
-        self.audio_track = MicrophoneTrack(self.audio)
+        self.video_track = CameraVideoTrack(camera)
+        self.audio_track = MicrophoneTrack(audio)
 
         self.connected_clients: Dict[str, dict] = {}
 
@@ -169,29 +161,8 @@ class AppState:
             "occupancy": 1,
             "confidence": "98%"
         }
-        
-        self.settings_file = "settings.json"
-        self.settings = self._load_settings()
 
-        self.notifications: List[dict] = []
-        self.max_notifications = 50
-
-        self.is_recording = False
-        self.recording_start_time: Optional[float] = None
-        self.current_recording_path: Optional[str] = None
-
-        self.audio_listen_enabled = True
-        self.current_volume = 0.7
-        
-        self.start_time = time.time()
-
-        self.user_profile = {
-            "user_name": "Zain",
-            "profile_pic": "/assets/img/zain.jpeg"
-        }
-    
-    def _load_settings(self) -> dict:
-        defaults = {
+        self.settings = get_settings({
             "baby_name": "Cookie",
             "cry_detection": False,
             "led_indicator": True,
@@ -201,16 +172,24 @@ class AppState:
             "video_fps": "30",
             "latitude": 33.69186440015098, 
             "longitude": 72.82942605084591
-        }
-        try:
-            if os.path.exists(self.settings_file):
-                with open(self.settings_file, 'r') as f:
-                    loaded = json.load(f)
-                    return {**defaults, **loaded}
-        except Exception as e:
-            logger.error(f"Settings load error: {e}")
+        })
 
-        return defaults
+        self.notifications: List[dict] = []
+        self.max_notifications = 50
+
+        self.is_recording = False
+        self.recording_start_time: Optional[float] = None
+        self.current_recording_path: Optional[str] = None
+
+        self.audio_listen_enabled = True
+        self.current_volume = audio.get_volume()
+        
+        self.start_time = time.time()
+
+        self.user_profile = {
+            "profile_pic": "/assets/img/zain.jpeg",
+            **get_profile()
+        }
     
     def save_settings(self):
         try:
@@ -255,10 +234,9 @@ async def ping(sid, data):
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if user == None:
-        is_new = check_new_install(db)
         return templates.TemplateResponse("login.html", {
             "request": request,
-            "is_new_install": is_new
+            "is_new_install": check_new_install(db)
         })
     
     return RedirectResponse(url="/dashboard", status_code=303)
@@ -277,13 +255,8 @@ async def get_dashboard(request: Request):
     })
 
 @app.post("/api/auth")
-async def handle_auth(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    confirm_password: str = Form(None),
-    db: Session = Depends(get_db)
-):
+async def handle_auth(request: Request, username: str = Form(...), password: str = Form(...), confirm_password: str = Form(None), db: Session = Depends(get_db)):
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     if check_new_install(db):
         if password != confirm_password:
             return RedirectResponse(url="/?error=match", status_code=status.HTTP_303_SEE_OTHER)
@@ -291,6 +264,8 @@ async def handle_auth(
         hashed = pwd_context.hash(password)
         db.add(User(username=username, password=hashed))
         db.commit()
+
+        state.user_profile.update({ "user_name": username, "email": None })
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     else:
         user = db.query(User).filter(User.username == username).first()
@@ -348,7 +323,7 @@ async def offer(request: Request):
 
     pc = RTCPeerConnection()
     pc_id = str(uuid.uuid4())
-    pcs[pc_id] = pc
+    state.pcs[pc_id] = pc
 
     pc.addTrack(state.video_track)
     pc.addTrack(state.audio_track)
@@ -362,7 +337,7 @@ async def offer(request: Request):
     async def state_change():
         if pc.connectionState in ["failed", "closed"]:
             await pc.close()
-            pcs.pop(pc_id, None)
+            state.pcs.pop(pc_id, None)
 
     return {
         "id": pc_id,
@@ -375,7 +350,7 @@ async def candidate(request: Request):
 
     params = await request.json()
 
-    pc = pcs[params["pc_id"]]
+    pc = state.pcs[params["pc_id"]]
 
     cand = candidate_from_sdp(params["candidate"])
     cand.sdpMid = params["sdpMid"]
@@ -689,10 +664,12 @@ async def capture_snapshot():
 @app.get("/api/connection")
 async def get_connection_stats():
     latency = get_latency()
+    speed = await quick_speed_test()
+
     return JSONResponse({
         "is_connected": latency is not None,
         **get_wifi_signal(),
-        **quick_speed_test(),
+        **speed,
         **latency,
         "uptime": format_uptime(time.time() - state.start_time)
     })
@@ -761,7 +738,7 @@ async def get_health_data():
 async def start_record(request: Request):
     global recorder
     data = await request.json()
-    pc = pcs.get(data["pc_id"])
+    pc = state.pcs.get(data["pc_id"])
 
     if not pc:
         return { "status": True, "message": "PeerConnection not found" }
@@ -785,23 +762,12 @@ def get_template_context() -> dict:
     snapshots_data = camera.get_snapshots(limit=20)
 
     return {
-        "user_name": state.user_profile["user_name"],
-        "profile_pic": state.user_profile["profile_pic"],
-        "is_connected": True,
-        "temperature": state.sensor_data["temperature"],
-        "humidity": state.sensor_data["humidity"],
-        "noise_level": state.sensor_data["noise"],
+        "profile": state.user_profile,
+        "sensors": state.sensor_data,
+        "settings": state.settings,
         "latency": "N/A",
-        "video_quality": state.settings["video_quality"],
-        "video_resolution": state.settings["video_resolution"],
-        "video_fps": state.settings["video_fps"],
-        "people_count": state.sensor_data["occupancy"],
         "notifications": state.notifications[-10:],
         "lullabies": media.getlist(),
-        "baby_name": state.settings["baby_name"],
-        "cry_detection": state.settings["cry_detection"],
-        "led_indicator": state.settings["led_indicator"],
-        "buzzer_enabled": state.settings["buzzer_enabled"],
         "recordings": recordings_data["items"],
         "recording_count": recordings_data["count"],
         "available_dates": recordings_data["available_dates"],
@@ -811,7 +777,7 @@ def get_template_context() -> dict:
         "snapshot_count": snapshots_data["count"],
         "total_pages_snapshots": snapshots_data.get("total_pages", 1),
         "storage_media": get_storage("audio"),
-        "volume": audio.get_volume(),
+        "volume": state.current_volume,
         "baby_audio": state.audio_listen_enabled,
         "health": get_system_health(),
         "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"])

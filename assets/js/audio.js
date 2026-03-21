@@ -36,34 +36,34 @@ async function initPTT()
         }
     }
 
-    async function startRecording() {
-
+    async function startRecording() 
+    {
         if (!stream) {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         }
 
-        audioContext = new AudioContext()
-        const source = audioContext.createMediaStreamSource(stream)
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
 
-        analyser = audioContext.createAnalyser()
-        analyser.fftSize = 64
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 64;
 
-        const bufferLength = analyser.frequencyBinCount
-        dataArray = new Uint8Array(bufferLength)
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
 
-        source.connect(analyser)
+        source.connect(analyser);
 
-        mediaRecorder = new MediaRecorder(stream)
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
 
-        chunks = []
+        chunks = [];
 
-        mediaRecorder.ondataavailable = e => chunks.push(e.data)
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
-        mediaRecorder.start()
+        mediaRecorder.start();
 
-        status.innerText = "Recording ..."
+        status.innerText = "Recording ...";
 
-        updateBars()
+        updateBars();
     }
 
     function stopRecording() {

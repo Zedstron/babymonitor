@@ -77,10 +77,10 @@ function updateUptime(hours, minutes) {
     document.getElementById('connection-uptime').textContent = `${hours}h ${minutes}m`;
 }
 
-async function loadConnectionData() {
-    showConnectionLoading();
-    
-    try {
+async function loadConnectionData() 
+{
+    try 
+    {
         const response = await fetch('/api/connection');
         const data = await response.json();
 
@@ -91,20 +91,21 @@ async function loadConnectionData() {
 
         updateWifiBars(data.signalStrength, data.signalLabel);
         updateBandwidth(parseFloat(data.bandwidth));
-        
-        setTimeout(() => {
-            hideConnectionLoading();
-        }, 500);
-        
     } catch (error) {
         console.error('Error loading connection data:', error);
         updateConnectionStatus(false);
         updateWifiBars(0);
-        hideConnectionLoading();
     }
 }
 
-async function startConnectionUpdates() {
+async function startConnectionUpdates() 
+{
+    showConnectionLoading();
     await loadConnectionData();
-    setInterval(loadConnectionData, 30000);
+
+    setTimeout(() => {
+        hideConnectionLoading();
+    }, 500);
+
+    setInterval(loadConnectionData, 60000);
 }

@@ -1,12 +1,26 @@
 let healthMonitor = {
     pollingInterval: null,
-    intervalMs: 15,
+    intervalMs: 15000,
     isPolling: false,
     lastUpdate: null,
     retryCount: 0,
     maxRetries: 0
 };
 
+const target = document.getElementById("health");
+const observer = new MutationObserver(() => 
+{
+    const visible = !!(target.offsetWidth || target.offsetHeight || target.getClientRects().length);
+    if (!visible)
+        stopHealthPolling();
+    else 
+        initHealthMonitor();
+});
+
+observer.observe(target, {
+  attributes: true,
+  attributeFilter: ["style", "class"]
+});
 
 function initHealthMonitor() {
     fetchHealthData();
@@ -28,8 +42,10 @@ function stopHealthPolling() {
     healthMonitor.isPolling = false;
 }
 
-async function fetchHealthData() {
-    try {
+async function fetchHealthData() 
+{
+    try 
+    {
         const response = await fetch('/api/health');
         
         if (!response.ok) {
@@ -48,18 +64,20 @@ async function fetchHealthData() {
             throw new Error(result.message || 'Unknown error');
         }
         
-    } catch (error) {
-        console.error(error);
+    } 
+    catch (error) 
+    {
         healthMonitor.retryCount++;
 
         if (healthMonitor.retryCount >= healthMonitor.maxRetries) {
-            showToast('Failed to fetch health data - device may be offline', 'error');
+            showToast('Failed to Fetch Health Data', 'error');
             healthMonitor.retryCount = 0;
         }
     }
 }
 
-function updateHealthUI(data) {
+function updateHealthUI(data) 
+{
     updateElementText('cpu-percent', `${data.cpu_percent}%`);
     updateElementText('cpu-temp', `${data.cpu_temp}°C`);
     updateProgressBar('cpu-temp-bar', (data.cpu_temp / 80 * 100), 100);
@@ -114,7 +132,8 @@ function updateHealthUI(data) {
     updateElementText('load-avg', data.load_avg);
 }
 
-function updateBandwidthChart(bandwidthData) {
+function updateBandwidthChart(bandwidthData) 
+{
     const maxMb = Math.max(...bandwidthData.map(d => d.mb), 1);
     
     bandwidthData.forEach((day, index) => {
@@ -132,14 +151,24 @@ function updateBandwidthChart(bandwidthData) {
     });
 }
 
-function updateElementText(elementId, value) {
+function updateElementText(elementId, value) 
+{
     const element = document.getElementById(elementId);
     if (element) {
         element.textContent = value;
     }
 }
 
-function updateProgressBar(elementId, value, max = 100) {
+function updateElementClass(elementId, value) 
+{
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.className = value;
+    }
+}
+
+function updateProgressBar(elementId, value, max = 100) 
+{
     const element = document.getElementById(elementId);
     if (element) {
         const percentage = Math.min((value / max * 100), 100);
@@ -147,7 +176,8 @@ function updateProgressBar(elementId, value, max = 100) {
     }
 }
 
-function updateCircularProgress(elementId, percentage) {
+function updateCircularProgress(elementId, percentage) 
+{
     const circle = document.getElementById(elementId);
     if (circle) {
         const radius = circle.getAttribute('r') || 56;
@@ -157,27 +187,31 @@ function updateCircularProgress(elementId, percentage) {
     }
 }
 
-function getTempStatus(temp) {
+function getTempStatus(temp) 
+{
     if (temp < 50) return 'Normal';
     if (temp < 70) return 'Warm';
     return 'Hot';
 }
 
-function getBandwidthStatus(percent) {
+function getBandwidthStatus(percent) 
+{
     if (percent < 50) return 'Healthy usage';
     if (percent < 75) return 'Moderate usage';
     if (percent < 90) return 'High usage';
     return 'Near limit';
 }
 
-function getBandwidthStatusClass(percent) {
+function getBandwidthStatusClass(percent) 
+{
     if (percent < 50) return 'text-emerald-600 dark:text-emerald-400';
     if (percent < 75) return 'text-amber-600 dark:text-amber-400';
     if (percent < 90) return 'text-orange-600 dark:text-orange-400';
     return 'text-red-600 dark:text-red-400';
 }
 
-function updateLastUpdateTime() {
+function updateLastUpdateTime() 
+{
     const now = healthMonitor.lastUpdate;
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
@@ -187,22 +221,14 @@ function updateLastUpdateTime() {
     }
 }
 
-function refreshHealthData() {
+function refreshHealthData() 
+{
     showToast('Refreshing Health Data ...', 'info');
     fetchHealthData();
 }
 
-function toggleHealthPolling() {
-    if (healthMonitor.isPolling) {
-        stopHealthPolling();
-        showToast('Health polling paused', 'info');
-    } else {
-        startHealthPolling();
-        showToast('Health polling resumed', 'success');
-    }
-}
-
-function setHealthPollingInterval(milliseconds) {
+function setHealthPollingInterval(milliseconds) 
+{
     healthMonitor.intervalMs = milliseconds;
     
     if (healthMonitor.isPolling) {
@@ -211,30 +237,8 @@ function setHealthPollingInterval(milliseconds) {
     }
 }
 
-function getHealthPollingStatus() {
-    return {
-        isPolling: healthMonitor.isPolling,
-        intervalMs: healthMonitor.intervalMs,
-        lastUpdate: healthMonitor.lastUpdate,
-        retryCount: healthMonitor.retryCount
-    };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('health')) {
-        initHealthMonitor();
-    }
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        setHealthPollingInterval(60000);
-    } else {
-        setHealthPollingInterval(30000);
-        fetchHealthData();
-    }
-});
-
-window.addEventListener('beforeunload', () => {
+window.addEventListener('beforeunload', () => 
+{
     stopHealthPolling();
+    observer.disconnect();
 });

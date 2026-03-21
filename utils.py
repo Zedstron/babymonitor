@@ -2,61 +2,37 @@ import subprocess
 import re
 
 import time
-import requests
 from datetime import datetime
 from pathlib import Path
 from sqlalchemy.orm import Session
 from helpers.database import User
+from speedtest import Speedtest
 
-TEST_SERVERS = [
-    "https://ash-speed.hetzner.com/10MB.bin",
-    "https://sin-speed.hetzner.com/10MB.bin",
-    "https://fsn1-speed.hetzner.com/10MB.bin",
-]
-
-def quick_speed_test(duration=4):
-    best_speed = 0
-
-    for url in TEST_SERVERS:
-        try:
-            start = time.time()
-            downloaded = 0
-
-            with requests.get(url, stream=True, timeout=(5, 10)) as r:
-                for chunk in r.iter_content(chunk_size=65536):
-                    if not chunk:
-                        break
-
-                    downloaded += len(chunk)
-
-                    if time.time() - start >= duration:
-                        break
-
-            elapsed = time.time() - start
-            mbps = (downloaded * 8) / (elapsed * 1_000_000)
-            best_speed = max(best_speed, mbps)
-
-        except requests.exceptions.RequestException:
-            continue
-
-    if best_speed == 0:
-        return {
-            "bandwidth": 0,
-            "label": "No Connection"
-        }
-
-    if best_speed > 100:
-        label = "very fast"
-    elif best_speed > 40:
-        label = "fast"
-    elif best_speed > 10:
-        label = "average"
+def sp_to_label(speed):
+    if speed > 100:
+        label = "Very Fast"
+    elif speed > 40:
+        label = "Fast"
+    elif speed > 10:
+        label = "Average"
     else:
-        label = "slow"
+        label = "Slow"
+    
+    return label
+
+async def quick_speed_test(duration=4):
+    st = Speedtest()
+    st.get_servers()
+    st.get_best_server()
+    download_speed = st.download() / 1_000_000
+    upload_speed = st.upload() / 1_000_000
+
+    if download_speed == 0:
+        return {"bandwidth": 0, "label": "No Connection"}
 
     return {
-        "bandwidth": round(best_speed, 2),
-        "label": label
+        "download": { "speed": round(download_speed, 2), "label": sp_to_label(download_speed) },
+        "upload": { "speed": round(upload_speed, 2), "label": sp_to_label(upload_speed) }
     }
 
 def get_wifi_signal(interface="wlan0"):

@@ -94,14 +94,12 @@
 
         <div class="p-4 border-t border-slate-100 dark:border-slate-800 dark-mode-transition">
             <div class="flex items-center gap-3 px-2">
-                <img src="{{ profile_pic }}" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm">
+                <img src="{{ profile.profile_pic }}" alt="Profile" class="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm">
                 <div>
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 dark-mode-transition">{{
-                        user_name }}</p>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 dark-mode-transition">{{profile.user_name }}</p>
                     <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full {{ 'bg-green-500' if is_connected else 'bg-red-500' }}"></span>
-                        <span class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">{{ 'Connected' if
-                            is_connected else 'Disconnected' }}</span>
+                        <span id="connection_state_color" class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <span id="connection_state_label" class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Disconnected</span>
                     </div>
                 </div>
             </div>
@@ -178,7 +176,7 @@
                         <div>
                             <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Temperature</p>
                             <h3 id="temperature-value" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1 dark-mode-transition">
-                                {{ temperature }}°C</h3>
+                                {{ sensors.temperature }}°C</h3>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-temperature-half"></i>
@@ -189,7 +187,7 @@
                         <div>
                             <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Humidity</p>
                             <h3 id="humidity-value" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1 dark-mode-transition">
-                                {{ humidity }}%</h3>
+                                {{ sensors.humidity }}%</h3>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-droplet"></i>
@@ -200,7 +198,7 @@
                         <div>
                             <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Noise Level</p>
                             <h3 id="noise-value" class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1 dark-mode-transition">
-                                {{ noise_level }} dB</h3>
+                                {{ sensors.noise }} dB</h3>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-volume-high"></i>
@@ -230,7 +228,7 @@
                                     <span class="w-2 h-2 bg-white rounded-full"></span> LIVE
                                 </span>
                                 <span id="quality-badge" class="bg-slate-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-lg quality-badge">
-                                    <i class="fa-solid fa-video mr-1"></i> {{ video_quality }}
+                                    <i class="fa-solid fa-video mr-1"></i> {{ settings.video_quality }}
                                 </span>
                             </div>
 
@@ -269,7 +267,7 @@
                                 </h3>
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">FPS:</span>
-                                    <span id="fps-display" class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded dark-mode-transition">30</span>
+                                    <span id="fps-display" class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded dark-mode-transition">{{ settings.video_fps }}</span>
                                 </div>
                             </div>
 
@@ -381,12 +379,12 @@
                                         <div>
                                             <label class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition block mb-1">Resolution</label>
                                             <select id="video-resolution" onchange="changeResolution()" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-100 text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary dark-mode-transition">
-                                                <option value="1080" {{ 'selected' if video_resolution=='1080' else '' }}>1920x1080 (FHD)</option>
-                                                <option value="720" {{ 'selected' if video_resolution=='720' else '' }}>
+                                                <option value="1080" {{ 'selected' if settings.video_resolution=='1080' else '' }}>1920x1080 (FHD)</option>
+                                                <option value="720" {{ 'selected' if settings.video_resolution=='720' else '' }}>
                                                     1280x720 (HD)</option>
-                                                <option value="480" {{ 'selected' if video_resolution=='480' else '' }}>
+                                                <option value="480" {{ 'selected' if settings.video_resolution=='480' else '' }}>
                                                     854x480 (SD)</option>
-                                                <option value="360" {{ 'selected' if video_resolution=='360' else '' }}>
+                                                <option value="360" {{ 'selected' if settings.video_resolution=='360' else '' }}>
                                                     640x360 (Low)</option>
                                             </select>
                                         </div>
@@ -394,10 +392,10 @@
                                             <label class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition block mb-1">Frame
                                                 Quality</label>
                                             <select id="video-quality" onchange="changeQuality()" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-100 text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary dark-mode-transition">
-                                                <option value="high" {{ 'selected' if video_quality=='high' else '' }}>
+                                                <option value="high" {{ 'selected' if settings.video_quality=='high' else '' }}>
                                                     High (Best)</option>
-                                                <option value="medium" {{ 'selected' if video_quality=='medium' else '' }}>Medium (Balanced)</option>
-                                                <option value="low" {{ 'selected' if video_quality=='low' else '' }}>Low
+                                                <option value="medium" {{ 'selected' if settings.video_quality=='medium' else '' }}>Medium (Balanced)</option>
+                                                <option value="low" {{ 'selected' if settings.video_quality=='low' else '' }}>Low
                                                     (Data Saver)</option>
                                             </select>
                                         </div>
@@ -405,11 +403,11 @@
                                             <label class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition block mb-1">Frame
                                                 Rate</label>
                                             <select id="video-fps" onchange="changeFPS()" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-100 text-xs rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary dark-mode-transition">
-                                                <option value="30" {{ 'selected' if video_fps=='30' else '' }}>30 FPS
+                                                <option value="30" {{ 'selected' if settings.video_fps=='30' else '' }}>30 FPS
                                                 </option>
-                                                <option value="24" {{ 'selected' if video_fps=='24' else '' }}>24 FPS
+                                                <option value="24" {{ 'selected' if settings.video_fps=='24' else '' }}>24 FPS
                                                 </option>
-                                                <option value="15" {{ 'selected' if video_fps=='15' else '' }}>15 FPS
+                                                <option value="15" {{ 'selected' if settings.video_fps=='15' else '' }}>15 FPS
                                                 </option>
                                             </select>
                                         </div>
@@ -433,7 +431,7 @@
 
                             <div class="text-center py-4">
                                 <div id="occupancy-value" class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-4xl font-black mb-3 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
-                                    {{ people_count }}
+                                    {{ sensors.occupancy }}
                                 </div>
                                 <p class="text-sm text-slate-500 dark:text-slate-400 dark-mode-transition">People
                                     detected</p>
@@ -1126,38 +1124,32 @@
                             <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">General</h4>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-100 mb-1 dark-mode-transition">Baby's
-                                        Name</label>
-                                    <input type="text" id="set-name" value="{{ baby_name }}" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark-mode-transition">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-100 mb-1 dark-mode-transition">Baby's Name</label>
+                                    <input type="text" id="set-name" value="{{ settings.baby_name }}" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all dark-mode-transition">
                                 </div>
                             </div>
                         </div>
+                        
 
                         <hr class="border-slate-100 dark:border-slate-800 dark-mode-transition">
 
                         
                         <div>
-                            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Detection &
-                                Alerts</h4>
+                            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Detection & Alerts</h4>
                             <div class="space-y-4">
-
-                                
                                 <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 dark-mode-transition">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400">
                                             <i class="fa-solid fa-volume-xmark"></i>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm dark-mode-transition">
-                                                Cry Detection</p>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">
-                                                Alert when crying is detected</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm dark-mode-transition">Cry Detection</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Alert when crying is detected</p>
                                         </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="set-cry" {{ 'checked' if cry_detection else '' }} class="sr-only peer">
-                                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-                                        </div>
+                                        <input type="checkbox" id="set-cry" {{ 'checked' if settings.cry_detection else '' }} class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
 
@@ -1168,16 +1160,13 @@
                                             <i class="fa-regular fa-lightbulb"></i>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm dark-mode-transition">
-                                                LED Indicator</p>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">
-                                                Show status light on device</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm dark-mode-transition">LED Indicator</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Show status light on device</p>
                                         </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="set-led" {{ 'checked' if led_indicator else '' }} class="sr-only peer">
-                                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-                                        </div>
+                                        <input type="checkbox" id="set-led" {{ 'checked' if settings.led_indicator else '' }} class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
 
@@ -1188,19 +1177,50 @@
                                             <i class="fa-solid fa-bell"></i>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm dark-mode-transition">
-                                                Buzzer</p>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">
-                                                Sound alarm on critical events</p>
+                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm dark-mode-transition">Buzzer</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 dark-mode-transition">Sound alarm on critical events</p>
                                         </div>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="set-buzzer" {{ 'checked' if buzzer_enabled else '' }} class="sr-only peer">
-                                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-                                        </div>
+                                        <input type="checkbox" id="set-buzzer" {{ 'checked' if settings.buzzer_enabled else '' }} class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
 
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Baby Location</h4>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400">
+                                            <i class="fa-solid fa-landmark"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm">Latitude</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">MAP Coordinates</p>
+                                        </div>
+                                    </div>
+                                
+                                    <input type="text" id="latitude" value="{{ settings.latitude }}" placeholder="E.g. 2.36236363" class="w-32 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary">
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400">
+                                            <i class="fa-solid fa-landmark"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-700 dark:text-slate-100 text-sm">Longitude</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">MAP Coordinates</p>
+                                        </div>
+                                    </div>
+                                
+                                    <input type="text" id="longitude" value="{{ settings.longitude }}" placeholder="E.g. 2.36236363" class="w-32 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary">
+                                </div>
                             </div>
                         </div>
 
@@ -1432,7 +1452,6 @@
                             </div>
                         </div>
                     </div>
-            
                 </div>
             </div>
             {% endif %}

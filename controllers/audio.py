@@ -73,7 +73,7 @@ class AudioController:
 
     def play_audio_bytes(self, audio_bytes):
         if not self.error:
-            audio = AudioSegment.from_file(BytesIO(audio_bytes), format="webm")
+            audio = AudioSegment.from_file(BytesIO(audio_bytes), format="wav")
             self._speaker.write(audio.raw_data)
 
             return True
