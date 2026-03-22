@@ -126,12 +126,28 @@
 - Converting FE side to React/Angular
 ---
 
-## 🛠️ Installation
+## 🛠️ Manuall Installation
 
 ### 1. Clone
 ```bash
 git clone https://github.com/Zedstron/babymonitor
 cd babymonitor
+```
+
+Following is the automatic installation more easy using setup.sh
+### 1. Automatic Installation (Recommended)
+```bash
+sudo chmod +x setup.sh
+sudo ./setup.sh
+```
+
+Or if automatic installation isn't working for you, or crashes or packages broken or any thing
+in general go wrong try following Manual steps.
+
+### 2. Update & Upgrade APT repo
+```bash
+apt update -y
+apt upgrade -y
 ```
 
 ### 2. Virtual Env
