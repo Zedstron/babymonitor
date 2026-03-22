@@ -89,8 +89,15 @@ function updatePassword()
             body: JSON.stringify({ current_password, new_password })
         })
         .then(res => res.json())
-        .then(response => {
+        .then(response => 
+        {
             showToast(response.message, response.status ? "success" : "error");
+            if (response.status)
+            {
+                document.getElementById("current_password").value = '';
+                document.getElementById("new_password").value = '';
+                document.getElementById("confirm_password").value = '';
+            }
         })
         .catch(() => {
             showToast("Request failed", "error");

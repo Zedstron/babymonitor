@@ -19,13 +19,13 @@ socket.on('connect', () => {
     }, 12000);
 
     document.getElementById("connection_state_label").textContent = "Connected";
-    document.getElementById("connection_state_label").classList.replace("bg-red-500", "bg-green-500");
+    document.getElementById("connection_state_color").classList.replace("bg-red-500", "bg-green-500");
 });
 
 socket.on('disconnect', () => {
     clearInterval(pingHandler);
     document.getElementById("connection_state_label").textContent = "Disconnected";
-    document.getElementById("connection_state_label").classList.replace("bg-green-500", "bg-red-500");
+    document.getElementById("connection_state_color").classList.replace("bg-green-500", "bg-red-500");
 });
 
 socket.on('snapshot_new', (data) => {

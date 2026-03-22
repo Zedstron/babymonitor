@@ -151,7 +151,8 @@ templates = Jinja2Templates(directory="templates")
 class AppState:
     def __init__(self):
         self.pcs = dict()
-        self.recorder = None
+        self.recorder: MediaRecorder = None
+        self.recorder_task = None
 
         self.video_track = CameraVideoTrack(camera)
         self.audio_track = MicrophoneTrack(audio)
@@ -724,15 +725,14 @@ async def get_snapshot_stats():
 
 @app.post("/api/recording/stop")
 async def stop_record(request: Request):
-    global recorder
     data = await request.json()
-    pc_id = data["pc_id"]
 
-    if not recorder:
-        return { "status": False, "message": "No active recording" }
+    if not state.recorder or not data["pc_id"]:
+        return { "status": False, "message": "No active recording or PC Id provided" }
 
-    await recorder.stop()
-    recorder = None
+    await state.recorder.stop()
+    state.recorder = None
+    state.recorder_task = None
     return { "status": True, "message": "Recording has been saved" }
 
 @app.get("/api/health")
@@ -806,22 +806,26 @@ async def update_profile(request: Request, db: Session = Depends(get_db)):
         
 @app.post("/api/recording/start")
 async def start_record(request: Request):
-    global recorder
+    def start_recorder(recorder: MediaRecorder):
+        asyncio.run(recorder.start())
+
     data = await request.json()
     pc = state.pcs.get(data["pc_id"])
 
     if not pc:
         return { "status": True, "message": "PeerConnection not found" }
 
-    if recorder:
+    if state.recorder:
         return { "status": False, "message": "Recording already started" }
 
-    recorder = MediaRecorder("recordings/" + ts_filename())
+    state.recorder = MediaRecorder("recordings/" + ts_filename(ext='ts'))
 
-    recorder.addTrack(state.video_track)
-    recorder.addTrack(state.audio_track)
+    state.recorder.addTrack(state.video_track)
+    state.recorder.addTrack(state.audio_track)
 
-    await recorder.start()
+    import threading
+    state.recorder_task = threading.Thread(target=start_recorder, args=(state.recorder,))
+    state.recorder_task.start()
 
     state.is_recording = True
 

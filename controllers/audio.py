@@ -5,10 +5,11 @@ import numpy as np
 import math
 from io import BytesIO
 from aiortc import MediaStreamTrack
-from av import AudioFrame
+from av.audio.frame import AudioFrame
 import subprocess
 from fractions import Fraction
 import re
+import time
 
 class AudioController:
     def __init__(self, rate=48000, channels=1, chunk=960):
@@ -145,6 +146,8 @@ class MicrophoneTrack(MediaStreamTrack):
         self.timestamp = 0
 
     async def recv(self):
+        await asyncio.sleep(self.samples_per_frame / self.sample_rate)
+
         if not self.controller.error and self.controller._mic:
             data = self.controller._mic.read(
                 self.samples_per_frame,
