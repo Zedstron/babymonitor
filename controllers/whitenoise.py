@@ -9,34 +9,54 @@ class WhiteNoisePlayer:
         self.running = False
 
         self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(
-            format=pyaudio.paFloat32,
-            channels=1,
-            rate=self.rate,
-            output=True
-        )
-
         self.thread = None
 
-    def _play(self):
-        while self.running:
-            noise = np.random.uniform(-1, 1, self.chunk).astype(np.float32)
-            self.stream.write(noise.tobytes())
+    def __openSpeaker(self):
+        try:
+            if self.p:
+                self.stream = self.p.open(
+                    format=pyaudio.paFloat32,
+                    channels=1,
+                    rate=self.rate,
+                    output=True
+                )
+        except:
+            self.stream = None
+
+    def __play(self):
+        try:
+            while self.running:
+                noise = np.random.uniform(-1, 1, self.chunk).astype(np.float32)
+                self.stream.write(noise.tobytes())
+        except:
+            if self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
 
     def start(self):
-        if not self.running:
-            self.running = True
-            self.thread = threading.Thread(target=self._play, daemon=True)
-            self.thread.start()
+        try:
+            if not self.running:
+                self.running = True
+                self.__openSpeaker()
+                self.thread = threading.Thread(target=self.__play, daemon=True)
+                self.thread.start()
+
+                return True
+        except:
+            return False
 
     def stop(self):
-        self.running = False
-        if self.thread:
-            self.thread.join()
-        self.__close()
+        try:
+            self.running = False
+            if self.thread:
+                self.thread.join()
+            self.__close()
+
+            return True
+        except:
+            return False
 
     def __close(self):
         self.stop()
         self.stream.stop_stream()
         self.stream.close()
-        self.p.terminate()

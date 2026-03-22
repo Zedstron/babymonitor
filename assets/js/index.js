@@ -107,13 +107,39 @@ function changeFPS() {
 function toggleNightLight() {
 }
 
-function whiteNoise(status) 
+function toggleWhiteNoise(btn) 
 {
-    fetch("/api/whitenoise/" + status, { 
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
+    const isActive = btn.getAttribute('aria-pressed') === 'true';
+    const newState = !isActive;
+
+    btn.setAttribute('aria-pressed', newState.toString());
+
+    btn.classList.toggle('bg-blue-50', newState);
+    btn.classList.toggle('dark:bg-blue-900/20', newState);
+    btn.classList.toggle('border-blue-200', newState);
+    btn.classList.toggle('dark:border-blue-800', newState);
+    btn.classList.toggle('ring-2', newState);
+    btn.classList.toggle('ring-blue-400/50', newState);
+    btn.classList.toggle('border-transparent', !newState);
+
+    const icon = btn.querySelector('i');
+    if (icon) {
+        icon.classList.toggle('text-blue-600', newState);
+        icon.classList.toggle('text-blue-500', !newState);
+        icon.classList.toggle('scale-110', newState);
+    }
+
+    const dot = btn.querySelector('.w-2.h-2');
+    if (dot) {
+        dot.classList.toggle('bg-emerald-500', newState);
+        dot.classList.toggle('shadow-sm', newState);
+        dot.classList.toggle('shadow-emerald-500/30', newState);
+        dot.classList.toggle('bg-slate-300', !newState);
+        dot.classList.toggle('dark:bg-slate-600', !newState);
+    }
+
+    fetch("/api/whitenoise/" + (newState ? "start" : "stop"), {
+        headers: { "Content-Type": "application/json" }
     }).then(d => d.json()).then(d => {
         showToast(d.message, d.status ? "success" : "error");
     });
@@ -197,31 +223,6 @@ function updateUptime() {
     const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
     document.getElementById('uptime').innerText = `${hrs}:${mins}:${secs}`;
-}
-
-function saveSettings() {
-    const name = document.getElementById('set-name').value;
-    const cry = document.getElementById('set-cry').checked;
-    const led = document.getElementById('set-led').checked;
-    const buzzer = document.getElementById('set-buzzer').checked;
-
-    fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            baby_name: name,
-            cry_detection: cry,
-            led_indicator: led,
-            buzzer_enabled: buzzer
-        })
-    }).then(response => response.json()).then(data => {
-        if(data.status)
-            showToast('Settings saved successfully!', 'success');
-        else
-            showToast(data.message || 'Failed to save settings', 'error');
-    });
 }
 
 async function loadRecordings(filters = {}) 
@@ -525,6 +526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initPTT();
     readMediaStatus();
     initBabyAudio();
+    initSettingsControls();
 
     await initWebRTC();
 });

@@ -1,7 +1,7 @@
 import subprocess
 import re
 
-import time
+import socket
 from datetime import datetime
 from pathlib import Path
 from sqlalchemy.orm import Session
@@ -131,3 +131,30 @@ def format_uptime(seconds: float) -> str:
 
 def check_new_install(db: Session):
     return db.query(User).count() == 0
+
+def get_hostname():
+    return socket.gethostname()
+
+def set_hostname(new_hostname: str):
+    if not new_hostname or len(new_hostname) > 253:
+        raise ValueError("Invalid hostname")
+
+    subprocess.run(
+        ["hostnamectl", "set-hostname", new_hostname],
+        check=True
+    )
+
+    try:
+        with open("/etc/hosts", "r") as f:
+            lines = f.readlines()
+
+        with open("/etc/hosts", "w") as f:
+            for line in lines:
+                if "127.0.1.1" in line:
+                    f.write(f"127.0.1.1\t{new_hostname}\n")
+                else:
+                    f.write(line)
+    except Exception:
+        return False
+
+    return True

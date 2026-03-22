@@ -20,8 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List, Optional, AsyncGenerator
 from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
-from helpers.weather import get_current_weather
-from helpers.resources import get_system_health
+
 from helpers.database import get_db, get_settings, get_profile, save_settings
 from helpers.tokenizer import create_token, decode_token
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
@@ -33,6 +32,10 @@ from controllers.media import MediaController
 from controllers.audio import AudioController, MicrophoneTrack
 from controllers.camera import CameraController, CameraVideoTrack
 from controllers.gpio import GPIOController, IndicatorColor, IndicatorState
+from controllers.weather import get_current_weather
+from controllers.resources import get_system_health
+from controllers.wireguard import WireGuard
+from controllers.whitenoise import WhiteNoisePlayer
 from passlib.context import CryptContext
 
 logging.basicConfig(
@@ -49,6 +52,7 @@ gpio = GPIOController()
 camera = CameraController()
 audio = AudioController()
 media = MediaController()
+whitenoise = WhiteNoisePlayer()
 
 EXCLUDED_PATHS = {
     "/",
@@ -187,7 +191,7 @@ class AppState:
         self.start_time = time.time()
 
         try:
-            logger.debug("Please wait current bandwidth is being calculated")
+            logger.info("Please wait current bandwidth is being calculated")
             self.bandwidth = quick_speed_test()
         except:
             logger.warning("Bandwidth calculation failed, skipping")
@@ -739,6 +743,67 @@ async def get_health_data():
         "data": get_system_health()
     }
 
+@app.get("/api/whitenoise/start")
+async def start_whitenosie():
+    whitenoise.start()
+    return { "status": True, "message": "Whitenoise is now Active" }
+
+@app.get("/api/whitenoise/stop")
+async def start_whitenoise():
+    whitenoise.stop()
+    return { "status": True, "message": "Whitenoise is now Stopped" }
+
+@app.get("/api/wireguard/start")
+async def start_wg():
+    wire = WireGuard()
+    status = wire.start()
+
+    message = "Wireguard Service is now Running" if status else "Error occured while starting the service"
+    return { "status": status, "message": message }
+
+@app.get("/api/wireguard/stop")
+async def stop_wg():
+    wire = WireGuard()
+    status = wire.stop()
+
+    message = "Wireguard Service is now Stoped" if status else "Error occured while stoping the service"
+    return { "status": status, "message": message }
+
+@app.post("/api/wireguard")
+async def update_wireguard(request: Request):
+    data = await request.json()
+    
+    if len(data) > 0:
+        wire = WireGuard()
+        status = wire.save_config(data)
+        message = "Wireguard Settings updated Successfully" if status else "Error occured while udpating wireguard settings"
+        return { "status": status, "message": message }
+    
+    return { "status": False, "message": "No config provided nothing updated" }
+
+@app.post("/api/profile")
+async def update_profile(request: Request, db: Session = Depends(get_db)):
+    data = await request.json()
+    user = db.query(User).first()
+
+    if "email" in data and data["email"]:
+        user.email = data["email"]
+        db.commit()
+
+    if "new_password" in data:
+        context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+        hashed_new = context.hash(data["new_password"])
+        hashed_old = context.hash(data["current_password"])
+
+        if user.password == hashed_old:
+            user.password = hashed_new
+            db.commit()
+        else:
+            return { "status": False, "message": "Current Password is invalid" }
+    
+    return { "status": True, "message": "Successfully Updated" }
+        
 @app.post("/api/recording/start")
 async def start_record(request: Request):
     global recorder
@@ -766,6 +831,8 @@ def get_template_context() -> dict:
     recordings_data = camera.get_recordings()
     snapshots_data = camera.get_snapshots(limit=20)
 
+    wireguard = WireGuard()
+
     return {
         "profile": state.user_profile,
         "sensors": state.sensor_data,
@@ -786,6 +853,8 @@ def get_template_context() -> dict:
         "baby_audio": state.audio_listen_enabled,
         "health": get_system_health(),
         "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"]),
+        "wireguard": wireguard.get_config(),
+        "hostname": get_hostname(),
         **state.bandwidth
     }
 

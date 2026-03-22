@@ -3,6 +3,7 @@ from typing import Optional
 
 class SettingsUpdate(BaseModel):
     baby_name: Optional[str] = None
+    hostname: Optional[str] = None
     cry_detection: Optional[bool] = None
     led_indicator: Optional[bool] = None
     buzzer_enabled: Optional[bool] = None

@@ -57,7 +57,7 @@ def get_profile() -> dict:
     db = next(get_db())
     user = db.query(User).first()
     if user:
-        return { "id": user.id, "name": user.username, "email": user.email, "meta": user.meta }
+        return { "id": user.id, "name": user.username, "email": user.email or "", "meta": user.meta }
     
     return {}
 
