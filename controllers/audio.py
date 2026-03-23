@@ -46,7 +46,7 @@ class AudioController:
             return int(out.split('/')[1].strip().rstrip('%'))
         return 0
 
-    def play_audio_bytes(audio_bytes, mime_type):
+    def play_audio_bytes(self, audio_bytes, mime_type):
         ext_map = { "audio/ogg": ".ogg", "audio/webm": ".webm" }
         ext = ext_map.get(mime_type, ".webm")
 
