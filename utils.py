@@ -159,6 +159,3 @@ def set_hostname(new_hostname: str):
         return False
 
     return True
-
-def normalize_password(password: str) -> bytes:
-    return hashlib.sha256(password.encode("utf-8")).digest()

@@ -1,9 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import os
 import cv2
-import json
 import time
 import uuid
 import asyncio
@@ -23,11 +21,13 @@ from aiortc.contrib.media import MediaRecorder
 
 from helpers.database import get_db, get_settings, get_profile, save_settings
 from helpers.tokenizer import create_token, decode_token
+from helpers.logger import logger
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form, Depends, status
 from aiortc import RTCPeerConnection, RTCSessionDescription
 
 from utils import *
+
 from controllers.media import MediaController
 from controllers.audio import AudioController, MicrophoneTrack
 from controllers.camera import CameraController, CameraVideoTrack
@@ -36,17 +36,10 @@ from controllers.weather import get_current_weather
 from controllers.resources import get_system_health
 from controllers.wireguard import WireGuard
 from controllers.whitenoise import WhiteNoisePlayer
+
 from passlib.context import CryptContext
 
-logging.basicConfig(
-    level = logging.INFO,
-    format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers = [
-        logging.StreamHandler()
-    ]
-)
 
-logger = logging.getLogger(__name__)
 
 gpio = GPIOController()
 camera = CameraController()
@@ -102,7 +95,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     #     pass
 
     for pc in state.pcs.copy():
-        await pc.close()
+        await state.pcs[pc].close()
 
     state.pcs.clear()
     logger.info("✅ Shutdown complete")
@@ -274,7 +267,7 @@ async def handle_auth(request: Request, username: str = Form(...), password: str
         if password != confirm_password:
             return RedirectResponse(url="/?error=match", status_code=status.HTTP_303_SEE_OTHER)
 
-        hashed = pwd_context.hash(normalize_password(password))
+        hashed = pwd_context.hash(password)
         db.add(User(username=username, password=hashed))
         db.commit()
 
@@ -282,7 +275,7 @@ async def handle_auth(request: Request, username: str = Form(...), password: str
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     else:
         user = db.query(User).filter(User.username == username).first()
-        if user and pwd_context.verify(normalize_password(password), user.password):
+        if user and pwd_context.verify(password, user.password):
             res = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
             res.set_cookie(key="nursery", value=create_token({ "id": user.id, "username": user.username }), httponly=True, max_age=60*60*24*7, secure=True, samesite="lax")
             return res
@@ -292,9 +285,14 @@ async def handle_auth(request: Request, username: str = Form(...), password: str
 @app.post("/api/audio/play")
 async def play_audio(request: Request):
     data = await request.body()
-    audio.play_audio_bytes(data)
+    
+    mime_len = data[0]
+    mime_type = data[1 : 1 + mime_len].decode("utf-8")
+    audio_bytes = data[1 + mime_len:]
 
-    return { "status": True, "message": "Playing audio in speaker" }
+    status = audio.play_audio_bytes(audio_bytes, mime_type)
+
+    return { "status": status, "message": "Playing audio in speaker" if status else "Hardware initialization issue for playback" }
 
 @app.post("/api/audio/volume")
 async def set_volume(request: Request):

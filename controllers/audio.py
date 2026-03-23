@@ -18,6 +18,15 @@ class AudioController:
             self.channels = channels
             self.chunk = chunk
             self._audio = pyaudio.PyAudio()
+            
+            self.open_speaker()
+            self.open_mic()
+        except Exception as e:
+            print("Error initializing Audio", e)
+
+    
+    def open_speaker(self):
+        try:
             self._speaker = self._audio.open(
                 format=pyaudio.paInt16,
                 channels=self.channels,
@@ -25,12 +34,9 @@ class AudioController:
                 output=True,
                 frames_per_buffer=self.chunk
             )
-    
-            self.open_mic()
-            self.error = False
-        except Exception as e:
-            print("Error initializing Audio", e)
-            self.error = True
+        except:
+            self._speaker = None
+            print("Speakers are not available")
     
     def open_mic(self):
         try:
@@ -44,7 +50,6 @@ class AudioController:
         except:
             self._mic = None
             print("Microphone not Available, Skipping mic")
-            pass
     
     def update_volume(self, volume):
         try:
@@ -72,13 +77,18 @@ class AudioController:
         except Exception:
             return 0
 
-    def play_audio_bytes(self, audio_bytes):
-        if not self.error:
-            audio = AudioSegment.from_file(BytesIO(audio_bytes), format="wav")
-            self._speaker.write(audio.raw_data)
+    def play_audio_bytes(self, audio_bytes, mime_type):
+        if self._speaker:
+            format_map = {
+                "audio/ogg": "ogg",
+                "audio/webm": "webm",
+            }
+            audio_format = format_map.get(mime_type, "webm")
 
+            audio = AudioSegment.from_file(BytesIO(audio_bytes), format=audio_format)
+            self._speaker.write(audio.raw_data)
             return True
- 
+        
         return False
 
     def guess_occupancy(self):
@@ -88,7 +98,7 @@ class AudioController:
         }
 
     def get_mic_level(self):
-        if self.error:
+        if not self._mic:
             return { "dbfs": -100, "label": "no input" }
 
         data = self._mic.read(self.chunk, exception_on_overflow=False)
@@ -129,7 +139,7 @@ class AudioController:
             yield data
     
     def close_mic(self):
-        if not self.error:
+        if self._mic:
             self._mic.stop_stream()
             self._mic.close()
             self._mic = None
@@ -148,7 +158,7 @@ class MicrophoneTrack(MediaStreamTrack):
     async def recv(self):
         await asyncio.sleep(self.samples_per_frame / self.sample_rate)
 
-        if not self.controller.error and self.controller._mic:
+        if self.controller._mic:
             data = self.controller._mic.read(
                 self.samples_per_frame,
                 exception_on_overflow=False

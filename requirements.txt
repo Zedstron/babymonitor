@@ -19,4 +19,4 @@ speedtest-cli
 sqlalchemy
 audioop-lts
 passlib
-bcrypt
+argon2_cffi

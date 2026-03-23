@@ -1,9 +1,8 @@
-let pttActive = false;
-let pttTimer = null;
 let babyAudioState = {
     listenEnabled: true,
     volume: 70
 };
+let mimeType = "audio/webm";
 
 async function initPTT() 
 {
@@ -53,7 +52,15 @@ async function initPTT()
 
         source.connect(analyser);
 
-        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/wav" });
+        if (MediaRecorder.isTypeSupported("audio/webm")) {
+            mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+            mimeType = "audio/ogg";
+        } else {
+            throw new Error("No supported audio format");
+        }
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
 
         chunks = [];
 
@@ -85,19 +92,26 @@ async function initPTT()
             status.innerText = "Playing ...";
             bars.forEach(b => b.style.height = "2px")
 
-            const blob = new Blob(chunks, { type: "audio/webm" })
+            const blob = new Blob(chunks, { type: mimeType })
+            const arrayBuffer = await blob.arrayBuffer();
 
-            const buffer = await blob.arrayBuffer()
+            const mimeBytes = new TextEncoder().encode(mimeType);
+            const mimeLength = new Uint8Array([mimeBytes.length]);
 
-            await fetch("/api/audio/play", {
+            const combined = new Uint8Array(1 + mimeBytes.length + arrayBuffer.byteLength);
+            combined.set(mimeLength, 0);
+            combined.set(mimeBytes, 1);
+            combined.set(new Uint8Array(arrayBuffer), 1 + mimeBytes.length);
+
+            fetch("/api/audio/play", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/octet-stream"
-                },
-                body: buffer
+                headers: { "Content-Type": "application/octet-stream" },
+                body: combined
+            }).then(r => r.json()).then(r => {
+                status.innerText = "Idle";
+                showToast(r.message, r.status ? "success" : "error");
             });
 
-            status.innerText = "Idle";
             mediaRecorder = null;
         }
 
