@@ -20,3 +20,4 @@ sqlalchemy
 audioop-lts
 passlib
 argon2_cffi
+colorlog

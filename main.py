@@ -262,7 +262,7 @@ async def get_dashboard(request: Request):
 
 @app.post("/api/auth")
 async def handle_auth(request: Request, username: str = Form(...), password: str = Form(...), confirm_password: str = Form(None), db: Session = Depends(get_db)):
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
     if check_new_install(db):
         if password != confirm_password:
             return RedirectResponse(url="/?error=match", status_code=status.HTTP_303_SEE_OTHER)
@@ -789,7 +789,7 @@ async def update_profile(request: Request, db: Session = Depends(get_db)):
         db.commit()
 
     if "new_password" in data:
-        context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        context = CryptContext(schemes=["argon2"], deprecated="auto")
 
         hashed_new = context.hash(data["new_password"])
         hashed_old = context.hash(data["current_password"])
