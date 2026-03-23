@@ -395,12 +395,13 @@ async def clear_notifications():
 async def play_media(index: int):
     loop = asyncio.get_event_loop()
     def event(payload):
-        loop.create_task(sio.emit("media_track_position", payload ))
+        if len(state.connected_clients) > 0:
+            loop.create_task(sio.emit("media_track_position", payload ))
 
     lullabies = media.getlist()
     if 0 <= index < len(lullabies):
-        state = media.play(index, event)
-        await sio.emit("media_track_playing", { "song": lullabies[index], "artist": f"song_{index}", "isPlaying": True, **state })
+        update = media.play(index, event)
+        await sio.emit("media_track_playing", { "song": lullabies[index], "artist": f"song_{index}", "isPlaying": True, **update })
         return { "status": True, "message": f"Playing {lullabies[index]}" }
     else:
         raise HTTPException(status_code=404, detail="Media not found")
