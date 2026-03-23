@@ -23,6 +23,7 @@ class MediaController:
 
     def __on_end_reached(self, event):
         if self.__loop and event:
+            self.audio.stop()
             self.audio.play()
 
     def getlist(self):
