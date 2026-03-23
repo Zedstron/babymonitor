@@ -51,31 +51,14 @@ class AudioController:
             self._mic = None
             print("Microphone not Available, Skipping mic")
     
-    def update_volume(self, volume):
-        try:
-            percent = max(0, min(100, int(volume)))
-            subprocess.run(
-                ["amixer", "set", "PCM", f"{percent}%"],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            return True
-        except Exception:
-            return False
-
+    def update_volume(self, perc):
+        subprocess.run(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{perc}%"])
 
     def get_volume(self):
-        try:
-            out = subprocess.check_output(
-                ["amixer", "get", "PCM"],
-                text=True
-            )
-    
-            m = re.search(r"\[(\d+)%\]", out)
-            return int(m.group(1)) if m else 0
-        except Exception:
-            return 0
+        out = subprocess.getoutput("pactl get-sink-volume @DEFAULT_SINK@")
+        if '%' in out:
+            return int(out.split('/')[1].strip().rstrip('%'))
+        return 0
 
     def play_audio_bytes(self, audio_bytes, mime_type):
         if self._speaker:
