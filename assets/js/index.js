@@ -520,8 +520,42 @@ async function captureSnapshot() {
         showToast('Failed to capture snapshot', 'error');
     }
 }
+function openMenu() {
+    const aside = document.querySelector('aside');
+    const overlay = document.getElementById('mobile-overlay');
+    if (!aside) return;
+    aside.classList.remove('-translate-x-full');
+    aside.classList.add('translate-x-0');
+    if (overlay) overlay.classList.remove('hidden');
+}
 
-document.addEventListener('DOMContentLoaded', async () => {
+function closeMenu() {
+    const aside = document.querySelector('aside');
+    const overlay = document.getElementById('mobile-overlay');
+    if (!aside) return;
+    aside.classList.remove('translate-x-0');
+    aside.classList.add('-translate-x-full');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+function toggleMenu() {
+    const aside = document.querySelector('aside');
+
+    if (!aside) return;
+    const isOpen = aside.classList.contains('translate-x-0');
+    if (isOpen) {
+        closeMenu();
+    } else {
+        openMenu();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => 
+{
+    window.openMenu = openMenu;
+    window.closeMenu = closeMenu;
+    window.toggleMenu = toggleMenu;
+
     startConnectionUpdates();
     initPTT();
     readMediaStatus();
@@ -530,3 +564,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await initWebRTC();
 });
+

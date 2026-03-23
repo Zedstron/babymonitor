@@ -141,12 +141,9 @@ templates = Jinja2Templates(directory="templates")
 
 class AppState:
     def __init__(self):
-        self.pcs = dict()
+        self.pcs: dict[str, RTCPeerConnection] = dict()
         self.recorder: MediaRecorder = None
         self.recorder_task = None
-
-        self.video_track = CameraVideoTrack(camera)
-        self.audio_track = MicrophoneTrack(audio)
 
         self.connected_clients: Dict[str, dict] = {}
 
@@ -334,8 +331,8 @@ async def offer(request: Request):
     pc_id = str(uuid.uuid4())
     state.pcs[pc_id] = pc
 
-    pc.addTrack(state.video_track)
-    pc.addTrack(state.audio_track)
+    pc.addTrack(CameraVideoTrack(camera))
+    pc.addTrack(MicrophoneTrack(audio))
 
     await pc.setRemoteDescription(offer)
 
@@ -367,6 +364,15 @@ async def candidate(request: Request):
 
     await pc.addIceCandidate(cand)
 
+    return { "status": "ok" }
+
+@app.post("/streaming/close")
+async def close_pc(request: Request):
+    params = await request.json()
+    pc_id = params.get("pc_id")
+    pc = state.pcs.pop(pc_id, None)
+    if pc:
+        await pc.close()
     return { "status": "ok" }
 
 @app.post("/api/settings")
@@ -857,8 +863,8 @@ async def start_record(request: Request):
 
     state.recorder = MediaRecorder("recordings/" + ts_filename(ext='ts'))
 
-    state.recorder.addTrack(state.video_track)
-    state.recorder.addTrack(state.audio_track)
+    state.recorder.addTrack(CameraVideoTrack(camera))
+    state.recorder.addTrack(MicrophoneTrack(audio))
 
     import threading
     state.recorder_task = threading.Thread(target=start_recorder, args=(state.recorder,))

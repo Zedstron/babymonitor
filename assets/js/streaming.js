@@ -1,6 +1,9 @@
 let pendingCandidates = [];
 
-async function initWebRTC() {
+async function initWebRTC() 
+{
+    await clearExistingWebRTCConnection();
+
     const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
@@ -24,7 +27,6 @@ async function initWebRTC() {
 
         const video = document.getElementById("remoteVideo");
         video.srcObject = stream;
-
     };
 
     const offer = await pc.createOffer();
@@ -40,6 +42,7 @@ async function initWebRTC() {
     const data = await res.json();
 
     window.pc_id = data.id;
+    localStorage.setItem("pc_id", data.id);
 
     await pc.setRemoteDescription({
         sdp: data.sdp,
@@ -63,4 +66,17 @@ async function sendCandidate(candidate) {
             sdpMLineIndex: candidate.sdpMLineIndex
         })
     });
+}
+
+async function clearExistingWebRTCConnection()
+{
+    const pc_id = localStorage.getItem("pc_id");
+    if (window.pc_id && pc_id)
+    {
+        await fetch("/streaming/close", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pc_id })
+        });
+    }
 }
