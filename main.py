@@ -184,7 +184,6 @@ class AppState:
 
         try:
             logger.info("Please wait current bandwidth is being calculated")
-            raise Exception("lolz")
             self.bandwidth = quick_speed_test()
         except:
             logger.warning("Bandwidth calculation failed, skipping")
