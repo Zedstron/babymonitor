@@ -5,7 +5,6 @@ import cv2
 import time
 import uuid
 import asyncio
-import logging
 import socketio
 from helpers.models import *
 from pathlib import Path
@@ -38,8 +37,6 @@ from controllers.wireguard import WireGuard
 from controllers.whitenoise import WhiteNoisePlayer
 
 from passlib.context import CryptContext
-
-
 
 gpio = GPIOController()
 camera = CameraController()
@@ -115,6 +112,7 @@ sio = socketio.AsyncServer(
     logger=False,
     engineio_logger=False
 )
+
 app_socket = socketio.ASGIApp(sio, app)
 
 app.add_middleware(
@@ -186,6 +184,7 @@ class AppState:
 
         try:
             logger.info("Please wait current bandwidth is being calculated")
+            raise Exception("lolz")
             self.bandwidth = quick_speed_test()
         except:
             logger.warning("Bandwidth calculation failed, skipping")
@@ -389,10 +388,14 @@ async def clear_notifications():
 
 @app.get("/api/media/{index}/play")
 async def play_media(index: int):
+    loop = asyncio.get_event_loop()
+    def event(payload):
+        loop.create_task(sio.emit("media_track_position", payload ))
+
     lullabies = media.getlist()
     if 0 <= index < len(lullabies):
-        media.play(index)
-        await sio.emit("media_update", { "song": lullabies[index], "artist": f"song_{index}", "isPlaying": True })
+        state = media.play(index, event)
+        await sio.emit("media_track_playing", { "song": lullabies[index], "artist": f"song_{index}", "isPlaying": True, **state })
         return { "status": True, "message": f"Playing {lullabies[index]}" }
     else:
         raise HTTPException(status_code=404, detail="Media not found")
@@ -443,6 +446,23 @@ async def delete_media(index: int):
     else:
         raise HTTPException(status_code=404, detail="Media not found")
 
+@app.get("/api/media/volume/{value}")
+async def set_track_volume(value: int):
+    if 0 <= value <= 100:
+        media.volume(value)
+        await sio.emit("media_track_volume", { "value": value })
+        return { "status": True, "message": f"Current Track volume is now {value}" }
+    else:
+        raise HTTPException(status_code=404, detail="Invalid Volume value")
+
+@app.get("/api/media/seek/{value}")
+async def set_track_volume(value: int):
+    if 0 <= value <= 100:
+        media.seek(value)
+        return { "status": True, "message": f"Current Track Position is now {value}" }
+    else:
+        raise HTTPException(status_code=404, detail="Invalid Seek Position")
+
 @app.get("/api/media")
 async def get_media():
     return { "lullabies": media.getlist() }
@@ -450,6 +470,26 @@ async def get_media():
 @app.get("/api/media/status")
 async def get_media_status():
     return media.get_current()
+
+@app.get("/api/media/mute/on")
+async def set_mute_on():
+    media.mute(True)
+    return { "status": True, "message": "Successfully Updated" }
+
+@app.get("/api/media/mute/off")
+async def set_mute_off():
+    media.mute(False)
+    return { "status": True, "message": "Successfully Updated" }
+
+@app.get("/api/media/loop/on")
+async def set_loop_on():
+    media.loop(True)
+    return { "status": True, "message": "Successfully Updated" }
+
+@app.get("/api/media/loop/off")
+async def set_loop_off():
+    media.loop(False)
+    return { "status": True, "message": "Successfully Updated" }
 
 @app.get("/api/recordings")
 async def list_recordings():

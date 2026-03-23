@@ -8,7 +8,6 @@ pydantic
 jinja2
 aiofiles
 python-multipart
-pydub
 requests
 pyaudio
 python-vlc

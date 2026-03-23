@@ -1,15 +1,15 @@
 import asyncio
 import pyaudio
-from pydub import AudioSegment
 import numpy as np
 import math
-from io import BytesIO
+import os
+import vlc
+import tempfile
+import time
 from aiortc import MediaStreamTrack
 from av.audio.frame import AudioFrame
 import subprocess
 from fractions import Fraction
-import re
-import time
 
 class AudioController:
     def __init__(self, rate=48000, channels=1, chunk=960):
@@ -18,25 +18,11 @@ class AudioController:
             self.channels = channels
             self.chunk = chunk
             self._audio = pyaudio.PyAudio()
-            
-            self.open_speaker()
+
             self.open_mic()
         except Exception as e:
             print("Error initializing Audio", e)
 
-    
-    def open_speaker(self):
-        try:
-            self._speaker = self._audio.open(
-                format=pyaudio.paInt16,
-                channels=self.channels,
-                rate=self.rate,
-                output=True,
-                frames_per_buffer=self.chunk
-            )
-        except:
-            self._speaker = None
-            print("Speakers are not available")
     
     def open_mic(self):
         try:
@@ -60,19 +46,26 @@ class AudioController:
             return int(out.split('/')[1].strip().rstrip('%'))
         return 0
 
-    def play_audio_bytes(self, audio_bytes, mime_type):
-        if self._speaker:
-            format_map = {
-                "audio/ogg": "ogg",
-                "audio/webm": "webm",
-            }
-            audio_format = format_map.get(mime_type, "webm")
+    def play_audio_bytes(audio_bytes, mime_type):
+        ext_map = { "audio/ogg": ".ogg", "audio/webm": ".webm" }
+        ext = ext_map.get(mime_type, ".webm")
 
-            audio = AudioSegment.from_file(BytesIO(audio_bytes), format=audio_format)
-            self._speaker.write(audio.raw_data)
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
+            f.write(audio_bytes)
+            temp_filename = f.name
+
+        try:
+            player = vlc.MediaPlayer(temp_filename)
+            player.play()
+
+            while player.get_state() != vlc.State.Ended:
+                time.sleep(0.1)
+            
             return True
-        
-        return False
+        except:
+            return False
+        finally:
+            os.remove(temp_filename)
 
     def guess_occupancy(self):
         return {

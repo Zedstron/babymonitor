@@ -568,24 +568,18 @@
                                 </div>
 
                                 
-                                <div class="relative z-10">
-                                    <div class="flex items-center justify-between gap-6">
+                                <div class="relative z-10 w-full max-w-4xl mx-auto p-4">
+                                    <div class="flex items-center justify-between gap-6 mb-4">
 
-                                        
                                         <div class="flex items-center gap-4 flex-1 min-w-0">
-                                            
                                             <div class="w-16 h-16 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg flex-shrink-0">
                                                 <i class="fa-solid fa-music text-5xl text-white/80" id="now-playing-icon"></i>
                                             </div>
-
-                                            
                                             <div class="min-w-0 flex-1">
-                                                <p class="text-xs text-white/70 uppercase tracking-wider mb-1">Now
-                                                    Playing</p>
+                                                <p class="text-xs text-white/70 uppercase tracking-wider mb-1">Now Playing</p>
                                                 <div class="overflow-hidden">
                                                     <p id="now-playing-title" class="text-lg font-bold truncate">
-                                                        <span class="inline-block" id="now-playing-title-text">Nothing
-                                                            Playing</span>
+                                                        <span class="inline-block" id="now-playing-title-text">Nothing Playing</span>
                                                     </p>
                                                 </div>
                                                 <p id="now-playing-status" class="text-sm text-white/70 mt-1">
@@ -594,18 +588,31 @@
                                             </div>
                                         </div>
 
-                                        
                                         <div class="flex items-center gap-3 flex-shrink-0">
-                                            
+                                            <button onclick="toggleLoop()" class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm text-white/70 hover:bg-white/20 hover:text-white transition-all flex items-center justify-center" title="Loop">
+                                                <i class="fa-solid fa-repeat text-sm" id="repeat-icon"></i>
+
                                             <button onclick="togglePlayRemote()" id="btn-play-pause-remote" class="w-14 h-14 rounded-full bg-white text-primary hover:scale-105 transition-all shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" title="Play/Pause" disabled>
                                                 <i class="fa-solid fa-play text-xl" id="btn-play-pause-remote-icon"></i>
                                             </button>
 
-                                            
                                             <button onclick="stopRemote()" id="btn-stop-remote" class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 hover:scale-105 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" title="Stop" disabled>
                                                 <i class="fa-solid fa-stop text-xl"></i>
                                             </button>
+
+                                            <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2">
+                                                <button onclick="toggleMute()" class="text-white/70 hover:text-white transition-colors" title="Mute">
+                                                    <i class="fa-solid fa-volume-high text-sm" id="volume-icon"></i>
+                                                </button>
+                                                <input type="range" min="0" max="100" value="80" class="volume-slider w-20 h-1" oninput="setVolume(this.value)" title="Volume" id="mediavolume">
+                                            </div>
                                         </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-3">
+                                        <span id="current-time" class="text-xs text-white/70 font-mono w-10 text-right">0:00</span>
+                                        <input type="range" min="0" max="100" value="0" class="w-full h-1" id="seek-slider" oninput="seekTrack(this.value)" title="Seek">
+                                        <span id="total-duration" class="text-xs text-white/70 font-mono w-10">0:00</span>
                                     </div>
                                 </div>
                             </div>
@@ -1984,7 +1991,6 @@
         </div>
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recorderjs/0.1.0/recorder.min.js"></script>
     <script src="/assets/js/socket.js"></script>
     <script src="/assets/js/media.js"></script>
     <script src="/assets/js/gallery.js"></script>

@@ -3,35 +3,35 @@ let audioState = {
     isRemotePlaying: false,
     currentSong: null,
     currentSongId: null,
-    previewVisible: true
+    previewVisible: true,
+    mute: false,
+    loop: false,
+    length: 0,
+    volume: 0
 };
 
 class AudioPlayer {
     constructor(audioElementId) {
         this.audio = document.getElementById(audioElementId);
         this.currentBlobUrl = null;
-        
-        // Setup cleanup on page unload
+
         window.addEventListener('beforeunload', () => this.cleanup());
     }
     
-    async loadFromUrl(url) {
+    async loadFromUrl(url)
+    {
         try {
-            // Cleanup previous blob
             this.cleanup();
-            
-            // Fetch audio bytes
+
             const response = await fetch(url);
             
             if (!response.ok) {
                 throw new Error(`Failed to load: ${response.status}`);
             }
-            
-            // Convert to blob
+
             const blob = await response.blob();
             this.currentBlobUrl = URL.createObjectURL(blob);
-            
-            // Set source
+
             this.audio.src = this.currentBlobUrl;
             this.audio.load();
             
@@ -84,7 +84,21 @@ function hidePreview() {
     audioState.previewVisible = false;
 }
 
+function setParams(length=0, mute=false, loop=false, volume=0)
+{
+    audioState.length = length;
+    
+    audioState.mute = mute;
+    setMute(mute);
+
+    audioState.loop = loop;
+    setLoop(loop);
+
+    document.getElementById("mediavolume").value = audioState.volume = volume;
+}
+
 function updateNowPlaying(songName, songId, isPlaying = false) {
+
     const titleText = document.getElementById('now-playing-title-text');
     const status = document.getElementById('now-playing-status');
     const icon = document.getElementById('now-playing-icon');
@@ -125,6 +139,7 @@ function updateNowPlaying(songName, songId, isPlaying = false) {
 function readMediaStatus() {
     fetch("/api/media/status").then(res => res.json()).then(data => {
         updateNowPlaying(data.song, data.artist, data.isPlaying);
+        setParams(data.length, data.mute, data.loop, data.volume);
     });
 }
 
@@ -166,8 +181,15 @@ function stopRemote()
 {
     const select = document.getElementById('lullaby-select');
     fetch(`/api/media/${select.value}/stop`).then(response => response.json()).then(data => {
-        if(data.status)
+        if(data.status) {
+            const status = document.getElementById('now-playing-status');
+            const icon = document.getElementById('now-playing-icon');
+            const playPauseIcon = document.getElementById('btn-play-pause-remote-icon');
+            playPauseIcon.className = 'fa-solid fa-play text-xl';
+            icon.className = 'fa-solid fa-music text-5xl text-white/80';
+            status.innerHTML = '<i class="fa-solid fa-circle-play mr-1 text-emerald-400"></i> Stopped';
             showToast(data.message, "success");
+        }
         else
             showToast(data.message || 'Failed to Stop media', 'error');
     });
@@ -236,4 +258,80 @@ async function togglePlayRemote()
         pauseRemote();
     
     updateNowPlaying(audioState.currentSong, audioState.currentSongId, audioState.isRemotePlaying);
+}
+
+function setMute(flag)
+{
+    if (!flag)
+        document.getElementById("volume-icon").className = "fa-solid fa-volume-high text-sm";
+    else
+        document.getElementById("volume-icon").className = "fa-solid fa-volume-mute text-sm text-red-500";
+}
+
+function setLoop(flag)
+{
+    if (!flag)
+        document.getElementById("repeat-icon").className = "fa-solid fa-repeat text-sm";
+    else
+        document.getElementById("repeat-icon").className = "fa-solid fa-repeat text-sm text-blue-800";
+}
+
+function seekTrack(value) 
+{
+    fetch(`/api/media/seek/` + value).then(response => response.json()).then(data => {
+        if(data.status)
+            showToast(data.message, "success");
+        else
+            showToast(data.message || 'Failed to set media Volume', 'error');
+    });
+}
+
+function setVolume(value) 
+{ 
+    fetch(`/api/media/volume/` + value).then(response => response.json()).then(data => {
+        if(data.status)
+            showToast(data.message, "success");
+        else
+            showToast(data.message || 'Failed to set media Volume', 'error');
+    });
+}
+
+function toggleMute() 
+{
+    audioState.mute = !audioState.mute;
+    setMute(audioState.mute);
+
+    fetch(`/api/media/mute/` + (audioState.mute ? "on" : "off")).then(response => response.json()).then(data => {
+        if(data.status)
+            showToast(data.message, "success");
+        else
+            showToast(data.message || 'Failed to Mute media', 'error');
+    });
+}
+
+function toggleLoop() 
+{ 
+    audioState.loop = !audioState.loop;
+    setLoop(audioState.loop);
+
+    fetch(`/api/media/loop/` + (audioState.loop ? "on" : "off")).then(response => response.json()).then(data => {
+        if(data.status)
+            showToast(data.message, "success");
+        else
+            showToast(data.message || 'Failed to Mute media', 'error');
+    });
+}
+
+function updateProgress(current) {
+
+    document.getElementById('current-time').innerText = formatTime(current);
+    document.getElementById('total-duration').innerText = formatTime(audioState.length);
+    document.getElementById('seek-slider').value = (current / audioState.length) * 100;
+}
+
+function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
 }

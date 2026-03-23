@@ -53,6 +53,15 @@ socket.on('sensors', (data) => {
     sensorsUpdate = Date.now();
 });
 
-socket.on("media_update", (data) => {
+socket.on("media_track_playing", (data) => {
     updateNowPlaying(data.song, data.artist, data.isPlaying);
+    setParams(data.length, data.mute, data.loop, data.volume);
+});
+
+socket.on("media_track_position", (data) => {
+    updateProgress(data.position);
+});
+
+socket.on("media_track_volume", (data) => {
+    document.getElementById("mediavolume").value = data.value;
 });
