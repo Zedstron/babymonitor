@@ -185,8 +185,8 @@ class AppState:
         try:
             logger.info("Please wait current bandwidth is being calculated")
             self.bandwidth = quick_speed_test()
-        except:
-            logger.warning("Bandwidth calculation failed, skipping")
+        except Exception as e:
+            logger.warning("Bandwidth calculation failed, skipping " + str(e))
             self.bandwidth = {
                 "upload": { "speed": 0, "label": "No Connection" },
                 "download": { "speed": 0, "label": "No Connection" }

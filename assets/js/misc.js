@@ -84,7 +84,7 @@ async function loadConnectionData()
     {
         const response = await fetch('/api/connection');
         const data = await response.json();
-        console.log(data);
+
         if (data.uptime) {
             const parts = data.uptime.split(':');
             updateUptime(parseInt(parts[0]), parseInt(parts[1]));

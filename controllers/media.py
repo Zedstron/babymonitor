@@ -39,6 +39,8 @@ class MediaController:
     def get_volume(self):
         if self.audio:
             return self.audio.audio_get_volume()
+        
+        return 0
     
     def mute(self, flag):
         if self.audio:
@@ -47,6 +49,8 @@ class MediaController:
     def get_mute(self):
         if self.audio:
             return self.audio.audio_get_mute()
+        
+        return False
 
 
     def play(self, index=None, event=None):
@@ -114,7 +118,7 @@ class MediaController:
             "song": self.current_song,
             "artist": self.current_artist,
             "isPlaying": self.audio and self.audio.is_playing(),
-            "length": self.audio.get_length(),
+            "length": self.audio.get_length() if self.audio else 0,
             "volume": self.get_volume(),
             "loop": self.__loop,
             "mute": self.get_mute()

@@ -78,10 +78,11 @@ async function fetchHealthData()
 
 function updateHealthUI(data) 
 {
-    updateElementText('cpu-percent', `${data.cpu_percent}%`);
+    updateElementText('cpu-circle-percent', `${data.cpu_percent}%`);
     updateElementText('cpu-temp', `${data.cpu_temp}°C`);
     updateProgressBar('cpu-temp-bar', (data.cpu_temp / 80 * 100), 100);
     updateElementText('cpu-temp-status', getTempStatus(data.cpu_temp));
+    updateCircularProgress('cpu-circle', data.cpu_percent);
     
     if (data.cpu_cores && data.cpu_cores.length > 0) {
         data.cpu_cores.forEach((core, index) => {
@@ -90,7 +91,7 @@ function updateHealthUI(data)
         });
     }
     
-    updateElementText('ram-percent', `${data.ram_percent}%`);
+    updateElementText('ram-circle-percent', `${data.ram_percent}%`);
     updateElementText('ram-used', `${data.ram_used_gb}GB`);
     updateElementText('ram-total', `${data.ram_total_gb}GB`);
     updateElementText('ram-available', `${data.ram_available_gb}GB`);
@@ -180,10 +181,13 @@ function updateCircularProgress(elementId, percentage)
 {
     const circle = document.getElementById(elementId);
     if (circle) {
-        const radius = circle.getAttribute('r') || 56;
+        const radius = parseFloat(circle.getAttribute('r')) || 56;
         const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (percentage / 100 * circumference);
-        circle.style.strokeDashoffset = offset;
+
+        circle.style.strokeDasharray = `${circumference}`;
+        
+        const offset = circumference * (1 - percentage / 100);
+        circle.style.strokeDashoffset = `${offset}`;
     }
 }
 
