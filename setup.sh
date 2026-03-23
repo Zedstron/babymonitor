@@ -13,15 +13,14 @@ echo "Project dir: $SCRIPT_DIR"
 echo "Run script as $RUN_USER"
 
 echo "Updating APT Packages ..."
-apt update -y
+sudo apt update -y
 
 echo "Upgrading APT Packages ..."
-apt upgrade -y
+sudo apt upgrade -y
 
 echo "Disabling Bluetooth..."
 systemctl disable --now bluetooth.service || true
 systemctl mask bluetooth.service || true
-systemctl disable --now hciuart.service || true
 rfkill block bluetooth || true
 
 CONFIG_LINE='dtoverlay=pi3-disable-bt'
@@ -35,7 +34,7 @@ if [ -f "$PKG_FILE" ]; then
   echo "Installing system packages from packages.txt..."
   mapfile -t PKGS < <(grep -Ev '^\s*(#|$)' "$PKG_FILE")
   if [ "${#PKGS[@]}" -gt 0 ]; then
-    apt install -y --no-install-recommends "${PKGS[@]}"
+    sudo apt install -y --no-install-recommends "${PKGS[@]}"
   else
     echo "No packages listed in packages.txt"
   fi
@@ -93,11 +92,11 @@ WantedBy=multi-user.target
 EOF
 
 chmod 644 "$SERVICE_PATH"
-systemctl daemon-reload
-systemctl enable --now babymonitor.service || true
+sudo systemctl daemon-reload
+sudo systemctl enable --now babymonitor.service || true
 
 echo "Updating the Rpi hostname"
-hostnamectl set-hostname babyguard
+sudo hostnamectl set-hostname babymonitor
 
 printf "\n\033[32m
   ____       _                   ____                      _      _           _ 

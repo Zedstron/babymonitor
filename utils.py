@@ -2,6 +2,7 @@ import subprocess
 import re
 
 import socket
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from sqlalchemy.orm import Session
@@ -158,3 +159,6 @@ def set_hostname(new_hostname: str):
         return False
 
     return True
+
+def normalize_password(password: str) -> bytes:
+    return hashlib.sha256(password.encode("utf-8")).digest()

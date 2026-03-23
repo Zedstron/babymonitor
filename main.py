@@ -274,7 +274,7 @@ async def handle_auth(request: Request, username: str = Form(...), password: str
         if password != confirm_password:
             return RedirectResponse(url="/?error=match", status_code=status.HTTP_303_SEE_OTHER)
 
-        hashed = pwd_context.hash(password)
+        hashed = pwd_context.hash(normalize_password(password))
         db.add(User(username=username, password=hashed))
         db.commit()
 
@@ -282,7 +282,7 @@ async def handle_auth(request: Request, username: str = Form(...), password: str
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     else:
         user = db.query(User).filter(User.username == username).first()
-        if user and pwd_context.verify(password, user.password):
+        if user and pwd_context.verify(normalize_password(password), user.password):
             res = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
             res.set_cookie(key="nursery", value=create_token({ "id": user.id, "username": user.username }), httponly=True, max_age=60*60*24*7, secure=True, samesite="lax")
             return res

@@ -1,4 +1,4 @@
-fastapi
+fastapi<0.110
 uvicorn[standard]
 python-socketio
 aiortc
@@ -16,3 +16,7 @@ psutil
 python-jose[cryptography]
 httpx[http2]
 speedtest-cli
+sqlalchemy
+audioop-lts
+passlib
+bcrypt
