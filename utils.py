@@ -130,9 +130,6 @@ def format_uptime(seconds: float) -> str:
     secs = int(seconds % 60)
     return f"{hrs:02d}:{mins:02d}:{secs:02d}"
 
-def check_new_install(db: Session):
-    return db.query(User).count() == 0
-
 def get_hostname():
     return socket.gethostname()
 

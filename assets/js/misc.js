@@ -93,7 +93,6 @@ async function loadConnectionData()
         updateWifiBars(data.signalStrength, data.signalLabel);
     } catch (error) {
         console.error('Error loading connection data:', error);
-        updateConnectionStatus(false);
         updateWifiBars(0);
     }
 }

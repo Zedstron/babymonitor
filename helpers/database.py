@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, JSON
+from sqlalchemy import create_engine, Column, Integer, String, JSON, Text, exists
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 import json
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./nursery.db"
@@ -21,6 +21,13 @@ class Settings(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True)
     value = Column(String)
+
+class IRDevices(Base):
+    __tablename__ = "ir_devices"
+    id = Column(Integer, primary_key=True, index=True)
+    tag = Column(String, unique=True)
+    frequency = Column(Integer, nullable=False)
+    signal = Column(Text, nullable=False)
 
 Base.metadata.create_all(bind=engine)
 
@@ -91,3 +98,46 @@ def save_settings(settings: dict):
             db.add(Settings(key=key, value=__serialize(value)))
 
     db.commit()
+
+def save_ir_device(tag, signal, frequency=38000):
+    db = next(get_db())
+    if db.query(exists().where(IRDevices.tag == tag)).scalar():
+        return False
+
+    db.add(IRDevices(tag=tag, frequency=frequency, signal=signal))
+    db.commit()
+
+    return True
+
+def get_ir_device(id):
+    db = next(get_db())
+    device = db.query(IRDevices).filter_by(id=id).first()
+    if device:
+        return {
+            "tag": device.tag,
+            "frequency": device.frequency,
+            "signal": device.signal
+        }
+    
+    return None
+
+def remove_ir_device(id):
+    db = next(get_db())
+    return db.query(IRDevices).filter_by(id=id).delete() > 0
+
+def get_ir_devices():
+    result = []
+
+    db = next(get_db())
+    devices = db.query(IRDevices).all()
+    for device in devices:
+        result.append({
+            "id": device.id,
+            "tag": device.tag,
+            "frequency": device.frequency
+        })
+    
+    return result
+
+def check_new_install(db: Session):
+    return db.query(User).count() == 0

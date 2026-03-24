@@ -1,7 +1,9 @@
 let pendingCandidates = [];
+let vidMuted = true;
 
 async function initWebRTC() 
 {
+    document.getElementById("vid-mute-btn").addEventListener("touchstart", toggleVidMute);
     await clearExistingWebRTCConnection();
 
     const pc = new RTCPeerConnection({
@@ -79,4 +81,15 @@ async function clearExistingWebRTCConnection()
             body: JSON.stringify({ pc_id })
         });
     }
+}
+
+function toggleVidMute()
+{
+    vidMuted = !vidMuted;
+    if (vidMuted)
+        document.getElementById("vid-mute-icon").className = "fa-solid fa-volume-mute";
+    else
+        document.getElementById("vid-mute-icon").className = "fa-solid fa-volume-high";
+
+    document.getElementById("remoteVideo").muted = vidMuted;
 }

@@ -19,7 +19,8 @@
 
 ✔ Works over **LAN + WAN**  
 ✔ Designed for **real-time monitoring + interaction**  
-✔ Lightweight, self-hosted, privacy-first  
+✔ Lightweight, self-hosted, privacy-first
+✔ Can Control Infrared Devices
 
 ---
 
@@ -43,6 +44,10 @@
 - LED Indicator (via GPIO)
 - Temp/Humid Sensor (via GPIO)
 - Buzzer indicator (via GPIO)
+- Microphone Support (via USB)
+- Camera Module (via CSI Port)
+- TSOP Receiver for IR Learning (via GPIO)
+- IR Sender LED (via GPIO)
 
 ### 📊 System Monitoring
 - CPU, RAM, disk, network stats
@@ -93,6 +98,8 @@
 
 ## 🔌 GPIO & Hardware Guidelines
 
+> **Note:** All components are recommended for the best experience, but none are mandatory. If you omit a specific part (e.g., IR sender/receiver or mic/camera), only that specific functionality will be unavailable. Everything else will work seamlessly.
+
 <p align="center">
   <b>CSI Camera Module</b><br><br>
   <img src="assets/img/hardware_camera.png" width="90%"/>
@@ -109,13 +116,17 @@
 </p>
 
 - LED Indicator wiring (GPIO pins)
-- Sensor integration (Temp/Humidity) (GPIO pins)
-- Buzzer integration (GPIO pins)
+- DHT22/DHT11 (Temp/Humidity) (GPIO pins)
+- Piezo Buzzer (GPIO pins)
 - Speakers integration (3.5mm Audio Jack)
 - Microphone integration (USB port 2.0 or 3.0)
 - Camera module (CSI camera port)
+- TSOP IR Reciver sensor (GPIO pins)
+- IR sender sensor (GPIO pins)
 
 ---
+
+Automatic installation is recommended hence there are mnay steps involved installing system wide global packags and setting up proper boot service and other optimizations e.g. enabling/disabling other required hardware capablitities & features, the included setup.sh script takes care of this automatically.
 
 ## 🛠️ Automatic Installation (Recommended)
 
@@ -133,7 +144,7 @@ sudo ./setup.sh
 ---
 
 Or if automatic installation isn't working for you, or crashes or packages broken or any thing
-in general go wrong try following Manual steps.
+in general go wrong try following Manual minimal steps.
 
 ## 🛠️ Manuall Installation
 

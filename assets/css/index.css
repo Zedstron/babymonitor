@@ -2,6 +2,9 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
+/* Ensure images never overflow their containers on small screens */
+img { max-width: 100%; height: auto; display: block; }
+
 .tab-content {
     display: none;
     animation: fadeIn 0.3s ease-in-out;
@@ -275,4 +278,363 @@ circle {
 
 .animate-status-pulse {
     animation: status-pulse 2s infinite;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Audio tab mobile fixes: keep controls visible, prevent overflow, make menu scrollable */
+@media (max-width: 768px) {
+    /* Ensure audio container uses full width */
+    #audio { padding-left: 0.5rem; padding-right: 0.5rem; }
+
+    /* Player controls row: allow shrink and wrap so seekbar doesn't overflow */
+    #audio .relative.z-10 .flex.items-center.gap-3 {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    #audio .relative.z-10 .flex.items-center.gap-3 > input[type="range"] {
+        min-width: 0; /* allow flex shrinking */
+        flex: 1 1 auto;
+    }
+
+    /* Time labels should not force overflow */
+    #audio #current-time, #audio #total-duration {
+        flex: 0 0 auto;
+        width: auto;
+    }
+
+    /* Ensure seek slider and volume sliders occupy remaining width */
+    #audio input[type="range"] { max-width: 100%; }
+
+    /* Mobile menu: make aside scrollable and show a very thin scrollbar */
+    aside { -webkit-overflow-scrolling: touch; }
+    aside { overflow-y: auto; }
+    aside::-webkit-scrollbar { width: 6px; }
+    @media (max-width: 640px) {
+        aside::-webkit-scrollbar { width: 4px; }
+        aside::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.35); border-radius: 999px; }
+    }
+
+    #mobile-overlay { height: 100vh; }
+}
+
+aside {
+    height: 100dvh;
+    height: calc(100vh - env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+aside > .p-6 {
+    flex: 0 0 auto;
+    z-index: 10;
+}
+
+aside > nav {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 0.5rem;
+    scrollbar-width: thin; 
+}
+
+aside > .p-4 {
+    flex: 0 0 auto;
+    z-index: 10;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+@media (min-width: 768px) {
+    aside::-webkit-scrollbar { width: 0px; }
+    aside > nav::-webkit-scrollbar { width: 0px; }
+    aside > nav:hover::-webkit-scrollbar { width: 6px; }
+}
+
+@media (max-width: 768px) {
+    body, main, .tab-content { overflow-x: hidden; }
+
+    #audio .relative.z-10 > div.flex.items-center.gap-6 {
+        flex-wrap: wrap;
+        gap: 1rem !important;
+    }
+    #audio input[type="range"] {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+    #audio .flex.items-center.gap-3.flex-shrink-0 {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .grid grid-cols-1 sm\:grid-cols-2, 
+    .grid grid-cols-1 md\:grid-cols-2,
+    .grid grid-cols-2 md\:grid-cols-4 {
+        gap: 1rem;
+    }
+
+    .bg-white.dark\:bg-slate-900.rounded-2xl {
+        min-width: 0; 
+    }
+
+    aside > nav::-webkit-scrollbar { width: 4px; }
+    aside > nav::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+
+/* --- Audio Section Mobile Optimization --- */
+@media (max-width: 768px) {
+    #audio {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        width: 100%;
+    }
+
+    /* Ensure Player Controls Wrap */
+    #audio .relative.z-10 > div {
+        flex-wrap: wrap;
+    }
+
+    /* Range Inputs: Touch Friendly */
+    #audio input[type="range"] {
+        height: 24px;
+        background: transparent;
+        -webkit-appearance: none;
+        margin: 10px 0;
+        width: 100%;
+    }
+    
+    #audio input[type="range"]:focus {
+        outline: none;
+    }
+
+    /* Slider Track */
+    #audio input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 6px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+    }
+    
+    /* Slider Thumb */
+    #audio input[type="range"]::-webkit-slider-thumb {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #ffffff;
+        cursor: pointer;
+        -webkit-appearance: none;
+        margin-top: -7px; /* Center on track */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Volume Slider in Player (Small) */
+    #audio .volume-slider {
+        height: 16px;
+        width: 80px;
+    }
+    #audio .volume-slider::-webkit-slider-thumb {
+        height: 14px;
+        width: 14px;
+        margin-top: -5px;
+    }
+
+    /* Action Buttons: Full Width on Mobile */
+    #audio .grid.grid-cols-1.sm\:grid-cols-3 button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Prevent Overflow in Player Card */
+    #audio .bg-gradient-to-br.from-indigo-500 {
+        overflow-x: hidden;
+    }
+}
+
+/* Dark Mode Slider Fixes */
+.dark #audio input[type="range"]::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Weather Section Mobile Optimization --- */
+@media (max-width: 768px) {
+    #weather {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    /* Prevent text overflow in headers */
+    #weather h3, #weather p {
+        word-wrap: break-word;
+    }
+
+    /* Adjust Main Weather Card Flex */
+    #weather .bg-gradient-to-br.from-indigo-500 > .relative > .flex {
+        flex-wrap: wrap;
+    }
+
+    /* Ensure Weather Icons Scale */
+    #weather img.animate-float {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Comfort Index Cards: Ensure consistent height */
+    #weather .grid.grid-cols-1.sm\:grid-cols-3 > div {
+        min-height: 160px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Reduce spacing in details grid */
+    #weather .grid.grid-cols-2.md\:grid-cols-4 {
+        gap: 0.5rem;
+    }
+}
+
+/* Dark Mode Weather Card Fixes */
+.dark #weather .bg-gradient-to-br.from-slate-50 {
+    background-image: linear-gradient(to bottom right, rgba(30, 41, 59, 0.5), rgba(30, 41, 59, 0.8));
+}
+
+/* --- Health Section Mobile Optimization --- */
+@media (max-width: 768px) {
+    #health {
+        overflow-x: hidden;
+        width: 100%;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Prevent text overflow in headers */
+    #health h3, #health p {
+        word-wrap: break-word;
+    }
+
+    /* Circular Progress: Scale down on mobile */
+    #health .relative.w-32.h-32,
+    #health .relative.w-40.h-40,
+    #health .relative.w-28.h-28 {
+        max-width: 100%;
+    }
+
+    /* Storage Bar: Ensure text doesn't overflow */
+    #health .relative.h-8,
+    #health .relative.h-10 {
+        min-height: 2.5rem;
+    }
+
+    /* Bandwidth Chart: Ensure bars don't overflow */
+    #health .flex.items-end.justify-between {
+        gap: 0.25rem;
+    }
+
+    /* Stats Grid Cards: Consistent minimum height */
+    #health .grid.grid-cols-2.md\:grid-cols-4 > div {
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* Reduce spacing in grids */
+    #health .grid.grid-cols-1.md\:grid-cols-2 {
+        gap: 1rem;
+    }
+
+    /* Ensure all flex containers wrap properly */
+    #health .flex.flex-col.sm\:flex-row {
+        flex-wrap: wrap;
+    }
+}
+
+/* Dark Mode Health Card Fixes */
+.dark #health .bg-gradient-to-br.from-slate-50 {
+    background-image: linear-gradient(to bottom right, rgba(30, 41, 59, 0.5), rgba(30, 41, 59, 0.8));
+}
+
+/* --- Health Circular Progress Fixes --- */
+#health .relative[class*="w-40"],
+#health .relative[class*="w-36"],
+#health .relative[class*="w-44"],
+#health .relative[class*="w-48"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#health .relative[class*="w-40"] svg,
+#health .relative[class*="w-36"] svg,
+#health .relative[class*="w-44"] svg,
+#health .relative[class*="w-48"] svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#health .relative[class*="w-40"] .absolute.inset-0,
+#health .relative[class*="w-36"] .absolute.inset-0,
+#health .relative[class*="w-44"] .absolute.inset-0,
+#health .relative[class*="w-48"] .absolute.inset-0 {
+    position: relative;
+    z-index: 10;
+}
+
+/* Ensure icons stay centered within circle */
+#health .fa-microchip,
+#health .fa-memory {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Desktop-specific adjustments */
+@media (min-width: 768px) {
+    #health .relative.md\:w-48,
+    #health .relative.md\:w-44 {
+        margin: 0 auto;
+    }
+    
+    #health .relative.md\:w-48 .absolute.inset-0,
+    #health .relative.md\:w-44 .absolute.inset-0 {
+        transform: translateY(-2px);
+    }
+}
+
+/* --- Health Circular Progress Fixes --- */
+#health svg {
+    display: block;
+}
+
+#health circle {
+    transform-origin: center;
+    vector-effect: non-scaling-stroke;
+}
+
+/* Ensure rotation applies to SVG, not circles */
+#health .transform.-rotate-90 {
+    transform: rotate(-90deg);
+}
+
+/* Prevent marquee-like animation */
+#health #cpu-circle,
+#health #ram-circle {
+    transition: stroke-dashoffset 1s ease-out;
+    animation: none !important;
 }

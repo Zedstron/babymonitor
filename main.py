@@ -18,7 +18,7 @@ from typing import Dict, List, Optional, AsyncGenerator
 from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
 
-from helpers.database import get_db, get_settings, get_profile, save_settings
+from helpers.database import *
 from helpers.tokenizer import create_token, decode_token
 from helpers.logger import logger
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
@@ -35,6 +35,7 @@ from controllers.weather import get_current_weather
 from controllers.resources import get_system_health
 from controllers.wireguard import WireGuard
 from controllers.whitenoise import WhiteNoisePlayer
+from controllers.infrared import IRController
 
 from passlib.context import CryptContext
 
@@ -779,6 +780,56 @@ async def stop_record(request: Request):
     state.recorder_task = None
     return { "status": True, "message": "Recording has been saved" }
 
+@app.post("/api/ir/")
+async def add_new_ir(request: Request):
+    data = await request.json()
+    if "tag" not in data:
+        return { "status": False, "message": "Tag is required for recording signals" }
+    
+    tag = data.get("tag")
+    frequency = data.get("frequency", 38888)
+
+    ir = IRController(freq=frequency)
+
+    if ir.record(tag):
+        return { "status": True, "message": "Signal has been recorded & saved" }
+    
+    return { "status": False, "message": "Error occured either hardware issue or TAG not unique" }
+
+@app.get("/api/ir/")
+async def get_all_ir(request: Request):
+    return get_ir_devices()
+
+@app.get("/api/ir/{id}")
+async def get_all_ir(id: int):
+    return get_ir_device(id) or {
+        "status": False,
+        "message": "Device not found or Invalid ID"
+    }
+
+@app.delete("/api/ir/{id}")
+async def get_all_ir(id: int):
+    response = { "status": False, "message": "Device not found or invalid ID" }
+    if remove_ir_device(id):
+        response.update({ "status": True, "message": "Successfully Removed" })
+    
+    return response
+
+
+@app.post("/api/ir/{id}/send")
+async def send_ir_signal(id: int):
+    try:
+        ir = IRController()
+        result = ir.send(id)
+
+        if not result:
+            return { "status": False, "message": "Failed to send IR signal" }
+
+        return { "status": True, "message": "IR signal sent" }
+    except Exception as e:
+        logger.error(f"IR send error: {e}")
+        return { "status": False, "message": "Error sending IR signal" }
+
 @app.get("/api/health")
 async def get_health_data():
     return {
@@ -902,6 +953,7 @@ def get_template_context() -> dict:
         "health": get_system_health(),
         "weather": get_current_weather(state.settings["longitude"], state.settings["latitude"]),
         "wireguard": wireguard.get_config(),
+        "ir": get_ir_devices(),
         "hostname": get_hostname(),
         **state.bandwidth
     }

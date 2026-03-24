@@ -63,7 +63,14 @@ function switchTab(tabId) {
     activeNav.classList.remove('text-slate-500', 'dark:text-slate-400', 'hover:bg-slate-50', 'dark:hover:bg-slate-800');
     activeNav.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30', 'text-primary');
 
-    document.getElementById('page-title').innerText = tabId.toUpperCase();
+    // If on small screens, close the mobile menu after switching tabs
+    try {
+        if (window.innerWidth && window.innerWidth < 768) {
+            closeMenu();
+        }
+    } catch (e) {
+        // ignore if closeMenu not available yet
+    }
 }
 
 function toggleNotifications() {
