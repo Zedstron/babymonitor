@@ -412,7 +412,6 @@ aside > .p-4 {
     #audio input[type="range"] {
         height: 24px;
         background: transparent;
-        -webkit-appearance: none;
         margin: 10px 0;
         width: 100%;
     }
