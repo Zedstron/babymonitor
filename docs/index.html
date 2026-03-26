@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BabyGuard - Privacy-First Baby Monitor | Raspberry Pi + WebRTC</title>
+    <meta name="description" content="Self-hosted baby monitor with ultra-low latency WebRTC streaming, GPIO sensors, and complete privacy control">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'gradient': 'gradient 8s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        gradient: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        .code-block {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(90deg, #ff5f56, #ffbd2e, #27c93f);
+            opacity: 0.8;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .tech-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .tech-icon:hover {
+            transform: rotate(360deg) scale(1.2);
+        }
+        
+        .pin-diagram {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .timeline-line {
+            background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+        }
+        
+        .scroll-indicator {
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+        
+        .card-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        
+        .card-3d:hover {
+            transform: rotateY(10deg) rotateX(5deg);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-800 bg-gray-50">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 nav-blur border-b border-gray-200 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-baby text-3xl text-primary"></i>
+                    <span class="text-2xl font-bold gradient-text">BabyGuard</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#overview" class="text-gray-700 hover:text-primary transition">Overview</a>
+                    <a href="#features" class="text-gray-700 hover:text-primary transition">Features</a>
+                    <a href="#architecture" class="text-gray-700 hover:text-primary transition">Architecture</a>
+                    <a href="#hardware" class="text-gray-700 hover:text-primary transition">Hardware</a>
+                    <a href="#software" class="text-gray-700 hover:text-primary transition">Software</a>
+                    <a href="#webrtc" class="text-gray-700 hover:text-primary transition">WebRTC</a>
+                    <a href="#deployment" class="text-gray-700 hover:text-primary transition">Deployment</a>
+                    <a href="https://github.com/Zedstron/babymonitor" target="_blank" class="bg-primary text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition flex items-center space-x-2">
+                        <i class="fab fa-github"></i>
+                        <span>GitHub</span>
+                    </a>
+                </div>
+                
+                <button class="md:hidden text-gray-700" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-4 py-2 space-y-2">
+                <a href="#overview" class="block py-2 text-gray-700">Overview</a>
+                <a href="#features" class="block py-2 text-gray-700">Features</a>
+                <a href="#architecture" class="block py-2 text-gray-700">Architecture</a>
+                <a href="#hardware" class="block py-2 text-gray-700">Hardware</a>
+                <a href="#software" class="block py-2 text-gray-700">Software</a>
+                <a href="#deployment" class="block py-2 text-gray-700">Deployment</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center hero-gradient overflow-hidden pt-16">
+        <div class="absolute inset-0 bg-black opacity-20"></div>
+        
+        <!-- Animated Background Elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full animate-float"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full animate-float" style="animation-delay: 2s;"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white opacity-5 rounded-full animate-pulse-slow"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center" data-aos="fade-up">
+            <div class="inline-block mb-6 px-6 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white font-medium" data-aos="zoom-in">
+                <i class="fas fa-shield-alt mr-2"></i> Privacy-First & Self-Hosted
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight" data-aos="fade-up" data-aos-delay="100">
+                BabyGuard<br/>
+                <span class="text-yellow-300">Smart Baby Monitor</span>
+            </h1>
+            
+            <p class="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="200">
+                Build your own ultra-low latency baby monitor with Raspberry Pi, WebRTC streaming, 
+                and complete privacy control. No cloud, no subscriptions, just pure peace of mind.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center" data-aos="fade-up" data-aos-delay="300">
+                <a href="#deployment" class="px-8 py-4 bg-white text-primary rounded-full font-bold text-lg hover:bg-gray-100 transition transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-rocket mr-2"></i> Get Started
+                </a>
+                <a href="https://github.com/Zedstron/babymonitor" target="_blank" class="px-8 py-4 bg-transparent border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition">
+                    <i class="fab fa-github mr-2"></i> View on GitHub
+                </a>
+            </div>
+            
+            <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto" data-aos="fade-up" data-aos-delay="400">
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div class="text-3xl font-bold text-white">< 200ms</div>
+                    <div class="text-white/80 text-sm">Ultra-Low Latency</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div class="text-3xl font-bold text-white">100%</div>
+                    <div class="text-white/80 text-sm">Privacy Control</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div class="text-3xl font-bold text-white">WebRTC</div>
+                    <div class="text-white/80 text-sm">Real-Time Streaming</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div class="text-3xl font-bold text-white">Open Source</div>
+                    <div class="text-white/80 text-sm">MIT License</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 scroll-indicator">
+            <a href="#overview" class="text-white text-3xl">
+                <i class="fas fa-chevron-down"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Overview Section -->
+    <section id="overview" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right">
+                    <h2 class="text-4xl font-bold mb-6 gradient-text">What is BabyGuard?</h2>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        BabyGuard is a <strong>self-hosted, privacy-first baby monitoring system</strong> built for Raspberry Pi 4. 
+                        Unlike commercial baby monitors that rely on cloud services and monthly subscriptions, 
+                        BabyGuard gives you <strong>complete control</strong> over your data and privacy.
+                    </p>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Using cutting-edge <strong>WebRTC technology</strong>, it delivers ultra-low latency 
+                        (< 200ms) video and audio streaming directly to your browser—no apps required. 
+                        The system integrates with various sensors (temperature, humidity, motion) and 
+                        hardware components (IR blasters, LEDs, buzzers) through GPIO pins.
+                    </p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">No Cloud Dependencies</h4>
+                                <p class="text-gray-600">Your data never leaves your network</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">No Monthly Fees</h4>
+                                <p class="text-gray-600">One-time hardware cost, free software forever</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">Full Customization</h4>
+                                <p class="text-gray-600">Open source code you can modify and extend</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative" data-aos="fade-left">
+                    <img src="https://image.qwenlm.ai/public_source/d50ce697-17b9-4a37-841a-23fc84ee0beb/0470b61fd-51de-47a8-bf7c-e88a5911c2328827.png" 
+                         alt="BabyGuard Hardware Setup" 
+                         class="rounded-2xl shadow-2xl transform hover:scale-105 transition duration-500">
+                    <div class="absolute -bottom-6 -right-6 bg-primary text-white p-6 rounded-xl shadow-xl">
+                        <div class="text-3xl font-bold">v1.3.8</div>
+                        <div class="text-sm">Latest Version</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">Powerful Features</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Everything you need to monitor your little one with confidence and control
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-video text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">WebRTC Streaming</h3>
+                    <p class="text-gray-600">
+                        Peer-to-peer video/audio streaming with < 200ms latency. No server relay needed, 
+                        direct browser-to-device connection using modern WebRTC protocols.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-thermometer-half text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Environmental Monitoring</h3>
+                    <p class="text-gray-600">
+                        Real-time temperature and humidity tracking with DHT22/DHT11 sensors. 
+                        Get alerts when conditions fall outside safe ranges.
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-microphone text-2xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Two-Way Audio</h3>
+                    <p class="text-gray-600">
+                        Push-to-talk functionality lets you soothe your baby remotely. 
+                        Built-in white noise and lullaby player for better sleep.
+                    </p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="400">
+                    <div class="w-14 h-14 bg-pink-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-lightbulb text-2xl text-pink-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Smart GPIO Control</h3>
+                    <p class="text-gray-600">
+                        Control LEDs, buzzers, IR blasters, and other hardware components 
+                        through Raspberry Pi's GPIO pins. Automate night lights and alerts.
+                    </p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="500">
+                    <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-lock text-2xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Enterprise Security</h3>
+                    <p class="text-gray-600">
+                        JWT authentication, HTTPS encryption, cookie-based sessions, and 
+                        secure WebSocket connections keep your feed private and protected.
+                    </p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="600">
+                    <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-cloud-sun text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Weather Integration</h3>
+                    <p class="text-gray-600">
+                        External weather API integration shows outdoor conditions alongside 
+                        indoor monitoring for complete environmental awareness.
+                    </p>
+                </div>
+                
+                <!-- Feature 7 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="700">
+                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-save text-2xl text-red-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Recording & Snapshots</h3>
+                    <p class="text-gray-600">
+                        Capture snapshots or record video clips in AVI format. Save precious 
+                        moments or review important events with timestamp metadata.
+                    </p>
+                </div>
+                
+                <!-- Feature 8 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="800">
+                    <div class="w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-tachometer-alt text-2xl text-teal-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">System Health Dashboard</h3>
+                    <p class="text-gray-600">
+                        Monitor CPU usage, memory, bandwidth, WiFi signal strength, and 
+                        system temperature in real-time to ensure optimal performance.
+                    </p>
+                </div>
+                
+                <!-- Feature 9 -->
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-lg transition-all duration-300" data-aos="fade-up" data-aos-delay="900">
+                    <div class="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-network-wired text-2xl text-orange-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">LAN/WAN Access</h3>
+                    <p class="text-gray-600">
+                        Access from anywhere with WireGuard VPN and Caddy reverse proxy setup. 
+                        Secure remote monitoring without exposing your device to the internet.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">System Architecture</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Understanding how the pieces fit together—from hardware sensors to browser streaming
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center mb-16">
+                <div data-aos="fade-right">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">
+                        <i class="fas fa-layer-group text-primary mr-2"></i>
+                        Three-Tier Architecture
+                    </h3>
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border-l-4 border-primary">
+                            <h4 class="font-bold text-lg mb-2">1. Hardware Layer (Raspberry Pi)</h4>
+                            <p class="text-gray-600">
+                                Camera module, microphone, DHT sensors, IR receiver/transmitter, GPIO-controlled 
+                                LEDs and buzzers. All physical components interface through Pi's GPIO pins and CSI/USB ports.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border-l-4 border-secondary">
+                            <h4 class="font-bold text-lg mb-2">2. Backend Layer (FastAPI + WebRTC)</h4>
+                            <p class="text-gray-600">
+                                Python-based async web server handles HTTP requests, WebSocket connections, 
+                                WebRTC signaling, sensor polling, and hardware control. Uses aiortc for WebRTC implementation.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-xl border-l-4 border-green-500">
+                            <h4 class="font-bold text-lg mb-2">3. Frontend Layer (Browser)</h4>
+                            <p class="text-gray-600">
+                                Responsive web interface with HTML5/CSS3/JavaScript. WebRTC peer connection for 
+                                media streaming, Socket.IO for real-time updates, and REST API for control commands.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div data-aos="fade-left">
+                    <img src="https://image.qwenlm.ai/public_source/d50ce697-17b9-4a37-841a-23fc84ee0beb/2470b61fd-51de-47a8-bf7c-e88a5911c2322406.png" 
+                         alt="FastAPI Architecture" 
+                         class="rounded-2xl shadow-xl">
+                </div>
+            </div>
+            
+            <!-- Data Flow Diagram -->
+            <div class="bg-gray-50 rounded-3xl p-8 md:p-12" data-aos="fade-up">
+                <h3 class="text-2xl font-bold mb-8 text-center text-gray-800">Data Flow & Communication</h3>
+                
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="w-20 h-20 mx-auto bg-blue-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 glow-effect">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Capture</h4>
+                        <p class="text-sm text-gray-600">Camera & mic capture raw audio/video data</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-20 h-20 mx-auto bg-purple-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 glow-effect">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Encode</h4>
+                        <p class="text-sm text-gray-600">WebRTC codecs compress & packetize streams</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-20 h-20 mx-auto bg-pink-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 glow-effect">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Transmit</h4>
+                        <p class="text-sm text-gray-600">P2P connection streams data via SRTP</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-20 h-20 mx-auto bg-green-500 rounded-full flex items-center justify-center text-white text-3xl mb-4 glow-effect">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Display</h4>
+                        <p class="text-sm text-gray-600">Browser decodes & renders in real-time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Stack -->
+    <section class="py-20 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4">Technology Stack</h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Modern, battle-tested technologies working together seamlessly
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- FastAPI -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="100">
+                    <div class="text-5xl mb-4 tech-icon">⚡</div>
+                    <h3 class="text-xl font-bold mb-3">FastAPI</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Modern Python web framework for building async APIs with automatic docs and type checking.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Async/await support</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Auto-generated OpenAPI docs</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Pydantic data validation</li>
+                    </ul>
+                </div>
+                
+                <!-- WebRTC -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="200">
+                    <div class="text-5xl mb-4 tech-icon">📹</div>
+                    <h3 class="text-xl font-bold mb-3">WebRTC (aiortc)</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Real-time communication protocol for peer-to-peer audio/video streaming without plugins.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>< 200ms latency</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>P2P connection (no server relay)</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>SRTP encryption</li>
+                    </ul>
+                </div>
+                
+                <!-- Socket.IO -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="300">
+                    <div class="text-5xl mb-4 tech-icon">🔌</div>
+                    <h3 class="text-xl font-bold mb-3">Socket.IO</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Bidirectional real-time communication for sensor data, notifications, and live updates.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>WebSocket fallback</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Event-based architecture</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Auto-reconnection</li>
+                    </ul>
+                </div>
+                
+                <!-- RPi.GPIO -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="400">
+                    <div class="text-5xl mb-4 tech-icon">🔧</div>
+                    <h3 class="text-xl font-bold mb-3">RPi.GPIO</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Python library to control Raspberry Pi GPIO pins for sensors and actuators.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Digital I/O control</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>PWM support</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>I2C/SPI protocols</li>
+                    </ul>
+                </div>
+                
+                <!-- Jinja2 -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="500">
+                    <div class="text-5xl mb-4 tech-icon">🎨</div>
+                    <h3 class="text-xl font-bold mb-3">Jinja2</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Powerful templating engine for rendering dynamic HTML pages server-side.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Template inheritance</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Auto-escaping</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Fast rendering</li>
+                    </ul>
+                </div>
+                
+                <!-- JWT -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="600">
+                    <div class="text-5xl mb-4 tech-icon">🔐</div>
+                    <h3 class="text-xl font-bold mb-3">PyJWT</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        JSON Web Token implementation for secure, stateless authentication.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Stateless auth</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Token expiration</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Digital signatures</li>
+                    </ul>
+                </div>
+                
+                <!-- SQLite -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="700">
+                    <div class="text-5xl mb-4 tech-icon">💾</div>
+                    <h3 class="text-xl font-bold mb-3">SQLite + SQLAlchemy</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Lightweight database with ORM for storing settings, logs, and user data.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Zero configuration</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>ACID compliant</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Pythonic ORM</li>
+                    </ul>
+                </div>
+                
+                <!-- Caddy -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition" data-aos="fade-up" data-aos-delay="800">
+                    <div class="text-5xl mb-4 tech-icon">🌐</div>
+                    <h3 class="text-xl font-bold mb-3">Caddy Server</h3>
+                    <p class="text-gray-300 text-sm mb-4">
+                        Modern web server with automatic HTTPS for secure reverse proxy setup.
+                    </p>
+                    <ul class="text-sm text-gray-400 space-y-2">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Auto SSL certificates</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>HTTP/2 support</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Simple config</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WebRTC Deep Dive -->
+    <section id="webrtc" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">WebRTC Deep Dive</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Understanding the magic behind ultra-low latency peer-to-peer streaming
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center mb-16">
+                <div data-aos="fade-right">
+                    <img src="https://image.qwenlm.ai/public_source/d50ce697-17b9-4a37-841a-23fc84ee0beb/0470b61fd-51de-47a8-bf7c-e88a5911c2323049.png" 
+                         alt="WebRTC Architecture" 
+                         class="rounded-2xl shadow-xl">
+                </div>
+                
+                <div data-aos="fade-left">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-800">How WebRTC Works in BabyGuard</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">1</div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-2">Signaling (WebSocket)</h4>
+                                <p class="text-gray-600">
+                                    Browser and Raspberry Pi exchange SDP (Session Description Protocol) offers/answers 
+                                    and ICE candidates through WebSocket connection to establish P2P parameters.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">2</div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-2">NAT Traversal (STUN/TURN)</h4>
+                                <p class="text-gray-600">
+                                    STUN servers help discover public IP addresses. If direct connection fails (symmetric NAT), 
+                                    TURN server relays traffic (BabyGuard prefers direct P2P for lowest latency).
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">3</div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-2">Media Streaming (SRTP)</h4>
+                                <p class="text-gray-600">
+                                    Once connected, video/audio streams flow directly via SRTP (Secure Real-time Transport Protocol) 
+                                    with end-to-end encryption—no server in the middle!
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">4</div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-2">Codec Negotiation</h4>
+                                <p class="text-gray-600">
+                                    H.264 for video and Opus for audio provide optimal quality/latency balance. 
+                                    Hardware acceleration on Pi 4 ensures smooth encoding.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- WebRTC Benefits -->
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-8 md:p-12" data-aos="fade-up">
+                <h3 class="text-2xl font-bold mb-8 text-center text-gray-800">Why WebRTC vs Traditional Streaming?</h3>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl p-6 text-center">
+                        <div class="text-4xl mb-4">⚡</div>
+                        <h4 class="font-bold mb-2">Ultra-Low Latency</h4>
+                        <p class="text-gray-600 text-sm">
+                            < 200ms vs 2-10 seconds for HLS/DASH. See your baby in real-time, not delayed.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 text-center">
+                        <div class="text-4xl mb-4">🔒</div>
+                        <h4 class="font-bold mb-2">End-to-End Encryption</h4>
+                        <p class="text-gray-600 text-sm">
+                            DTLS-SRTP encrypts all media. No intermediaries can intercept your feed.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 text-center">
+                        <div class="text-4xl mb-4">🌐</div>
+                        <h4 class="font-bold mb-2">No Plugins Required</h4>
+                        <p class="text-gray-600 text-sm">
+                            Native browser support. Works on Chrome, Firefox, Safari, Edge—no Flash or Java.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hardware Setup -->
+    <section id="hardware" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">Hardware Components</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Everything you need to build your BabyGuard system
+                </p>
+            </div>
+            
+            <!-- Required Components -->
+            <div class="mb-16" data-aos="fade-up">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                    <i class="fas fa-star text-yellow-500 mr-3"></i>
+                    Required Components
+                </h3>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-microchip text-green-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">Raspberry Pi 4</h4>
+                                <p class="text-sm text-gray-500">2GB+ RAM recommended</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            The brain of BabyGuard. Pi 4's quad-core CPU handles WebRTC encoding 
+                            and sensor polling simultaneously with ease.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-camera text-blue-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">Camera Module</h4>
+                                <p class="text-sm text-gray-500">CSI or USB webcam</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            Raspberry Pi Camera Module v2 or any UVC-compatible USB webcam. 
+                            1080p@30fps recommended for smooth streaming.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-microphone text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">USB Microphone</h4>
+                                <p class="text-sm text-gray-500">Any USB mic or USB cam with mic</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            For two-way audio communication. Built-in mic on USB webcams works great, 
+                            or use a dedicated USB microphone for better quality.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">DHT22 Sensor</h4>
+                                <p class="text-sm text-gray-500">Temp & humidity</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            Digital temperature and humidity sensor connected to GPIO. 
+                            More accurate than DHT11, perfect for nursery monitoring.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-bread-slice text-red-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">Breadboard & Jumper Wires</h4>
+                                <p class="text-sm text-gray-500">For GPIO connections</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            Essential for connecting sensors and components to GPIO pins 
+                            without soldering. Male-to-female jumper wires recommended.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-plug text-yellow-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">Power Supply</h4>
+                                <p class="text-sm text-gray-500">5V 3A USB-C</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            Official Raspberry Pi power supply or equivalent. Stable power 
+                            is crucial for reliable operation and preventing SD card corruption.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Optional Components -->
+            <div class="mb-16" data-aos="fade-up">
+                <h3 class="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                    <i class="fas fa-plus-circle text-blue-500 mr-3"></i>
+                    Optional Enhancements
+                </h3>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white/50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                        <div class="text-3xl mb-3">💡</div>
+                        <h4 class="font-bold mb-2">IR LEDs</h4>
+                        <p class="text-sm text-gray-600">
+                            Infrared LEDs for night vision illumination (850nm or 940nm)
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white/50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                        <div class="text-3xl mb-3">📡</div>
+                        <h4 class="font-bold mb-2">IR Receiver (TSOP)</h4>
+                        <p class="text-sm text-gray-600">
+                            Learn and replay IR codes from remotes for smart control
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white/50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                        <div class="text-3xl mb-3">🔔</div>
+                        <h4 class="font-bold mb-2">Active Buzzer</h4>
+                        <p class="text-sm text-gray-600">
+                            Audio alerts for temperature thresholds or motion detection
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white/50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                        <div class="text-3xl mb-3">🎨</div>
+                        <h4 class="font-bold mb-2">RGB LED Strip</h4>
+                        <p class="text-sm text-gray-600">
+                            PWM-controlled ambient lighting with color customization
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- GPIO Pinout Diagram -->
+            <div class="bg-white rounded-3xl p-8 shadow-xl" data-aos="zoom-in">
+                <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">GPIO Pinout Reference</h3>
+                <img src="https://image.qwenlm.ai/public_source/d50ce697-17b9-4a37-841a-23fc84ee0beb/6470b61fd-51de-47a8-bf7c-e88a5911c2322727.png" 
+                     alt="Raspberry Pi GPIO Pinout" 
+                     class="w-full rounded-xl">
+                <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-red-500 rounded"></div>
+                        <span>Power (3.3V/5V)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-black rounded"></div>
+                        <span>Ground (GND)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-green-500 rounded"></div>
+                        <span>GPIO (Programmable)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-blue-500 rounded"></div>
+                        <span>I2C (SDA/SCL)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-purple-500 rounded"></div>
+                        <span>SPI (MOSI/MISO/SCLK)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                        <span>UART (TXD/RXD)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Software Installation -->
+    <section id="software" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">Software Installation</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Get BabyGuard running in minutes with our automated setup script
+                </p>
+            </div>
+            
+            <!-- Quick Install -->
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 md:p-12 text-white mb-12" data-aos="fade-up">
+                <h3 class="text-2xl font-bold mb-6 text-center">Quick Install (Recommended)</h3>
+                
+                <div class="code-block text-white p-6 font-mono text-sm mb-6 max-w-3xl mx-auto">
+                    <div class="mt-8">
+                        <span class="text-green-400"># Clone the repository</span><br>
+                        <span class="text-blue-300">git clone</span> https://github.com/Zedstron/babymonitor<br>
+                        <span class="text-blue-300">cd</span> babymonitor<br>
+                        <br>
+                        <span class="text-green-400"># Run automated setup</span><br>
+                        <span class="text-blue-300">sudo chmod</span> +x setup.sh<br>
+                        <span class="text-blue-300">sudo ./</span>setup.sh<br>
+                        <br>
+                        <span class="text-green-400"># That's it! Access at https://your-pi-ip:8000</span>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                        <i class="fas fa-download text-3xl mb-2"></i>
+                        <p class="text-sm">Installs all dependencies</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                        <i class="fas fa-cog text-3xl mb-2"></i>
+                        <p class="text-sm">Configures system settings</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
+                        <i class="fas fa-play text-3xl mb-2"></i>
+                        <p class="text-sm">Starts the application</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Manual Installation Steps -->
+            <div class="space-y-8" data-aos="fade-up">
+                <h3 class="text-2xl font-bold text-gray-800">Manual Installation Steps</h3>
+                
+                <div class="bg-gray-50 rounded-2xl p-8">
+                    <div class="flex items-start space-x-4 mb-6">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold mb-3 text-gray-800">Install System Dependencies</h4>
+                            <div class="code-block text-white p-4 font-mono text-sm">
+                                <div class="mt-8">
+                                    <span class="text-blue-300">sudo apt update</span><br>
+                                    <span class="text-blue-300">sudo apt install -y</span> $(cat packages.txt)<br>
+                                    <span class="text-gray-400"># Includes: python3-pip, libjpeg-dev, zlib1g-dev, etc.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-4 mb-6">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold mb-3 text-gray-800">Set Up Python Virtual Environment</h4>
+                            <div class="code-block text-white p-4 font-mono text-sm">
+                                <div class="mt-8">
+                                    <span class="text-blue-300">python3 -m venv</span> venv<br>
+                                    <span class="text-blue-300">source</span> venv/bin/activate<br>
+                                    <span class="text-blue-300">pip install --upgrade</span> pip<br>
+                                    <span class="text-blue-300">pip install -r</span> requirements.txt
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-4 mb-6">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold mb-3 text-gray-800">Generate SSL Certificates (Required for HTTPS)</h4>
+                            <div class="code-block text-white p-4 font-mono text-sm">
+                                <div class="mt-8">
+                                    <span class="text-blue-300">mkdir</span> cert && <span class="text-blue-300">cd</span> cert<br>
+                                    <span class="text-blue-300">openssl req -x509 -newkey rsa:2048</span> \<br>
+                                    &nbsp;&nbsp;<span class="text-blue-300">-keyout</span> key.pem \<br>
+                                    &nbsp;&nbsp;<span class="text-blue-300">-out</span> cert.pem \<br>
+                                    &nbsp;&nbsp;<span class="text-blue-300">-days</span> 365 \<br>
+                                    &nbsp;&nbsp;<span class="text-blue-300">-nodes</span><br>
+                                    <span class="text-gray-400"># Note: Browsers require HTTPS for microphone access</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-4 mb-6">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">4</div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold mb-3 text-gray-800">Enable Raspberry Pi Camera (if using CSI)</h4>
+                            <div class="code-block text-white p-4 font-mono text-sm">
+                                <div class="mt-8">
+                                    <span class="text-blue-300">sudo raspi-config</span><br>
+                                    <span class="text-gray-400"># Navigate to: Interface Options > Camera > Enable</span><br>
+                                    <span class="text-blue-300">sudo reboot</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-4">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">5</div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold mb-3 text-gray-800">Run the Application</h4>
+                            <div class="code-block text-white p-4 font-mono text-sm">
+                                <div class="mt-8">
+                                    <span class="text-blue-300">python</span> main.py<br>
+                                    <span class="text-gray-400"># Server starts at https://0.0.0.0:8000</span><br>
+                                    <span class="text-gray-400"># Access via: https://your-pi-ip:8000</span>
+                                </div>
+                            </div>
+                            <div class="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                                <p class="text-sm text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    <strong>Important:</strong> Always use HTTPS (not HTTP) to access the interface, 
+                                    otherwise browser security will block microphone access.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Deployment & WAN Access -->
+    <section id="deployment" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">Deployment & Remote Access</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Access your BabyGuard from anywhere in the world—securely
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12">
+                <!-- LAN Access -->
+                <div class="bg-white rounded-2xl p-8 shadow-lg" data-aos="fade-right">
+                    <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-home text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Local Network Access</h3>
+                    <p class="text-gray-600 mb-6">
+                        Access BabyGuard from any device on your home WiFi network. 
+                        Simple and secure—no internet connection required.
+                    </p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check text-green-500 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Find your Pi's IP address:</p>
+                                <code class="bg-gray-100 px-2 py-1 rounded text-sm">hostname -I</code>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check text-green-500 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Access via browser:</p>
+                                <code class="bg-gray-100 px-2 py-1 rounded text-sm">https://192.168.1.100:8000</code>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check text-green-500 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Set static IP (recommended):</p>
+                                <p class="text-sm text-gray-600">Configure in router or /etc/dhcpcd.conf</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- WAN Access -->
+                <div class="bg-white rounded-2xl p-8 shadow-lg" data-aos="fade-left">
+                    <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-globe text-2xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Remote WAN Access</h3>
+                    <p class="text-gray-600 mb-6">
+                        Monitor from anywhere using WireGuard VPN + Caddy reverse proxy. 
+                        Enterprise-grade security without exposing your Pi to the internet.
+                    </p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-shield-alt text-purple-500 mt-1"></i>
+                            <div>
+                                <p class="font-medium">WireGuard VPN Setup</p>
+                                <p class="text-sm text-gray-600">Create secure tunnel to home network</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-lock text-purple-500 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Caddy Reverse Proxy</p>
+                                <p class="text-sm text-gray-600">Auto SSL certificates & domain routing</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-key text-purple-500 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Port Forwarding (Minimal)</p>
+                                <p class="text-sm text-gray-600">Only WireGuard port (UDP 51820)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+                        <p class="text-sm text-purple-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Detailed WireGuard + Caddy configuration guide available in repository docs.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Best Practices -->
+            <div class="mt-12 bg-gradient-to-r from-red-50 to-orange-50 rounded-3xl p-8 md:p-12" data-aos="fade-up">
+                <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">
+                    <i class="fas fa-shield-alt text-red-500 mr-2"></i>
+                    Security Best Practices
+                </h3>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl p-6">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-key text-green-500 text-xl mr-3"></i>
+                            <h4 class="font-bold">Strong Passwords</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Change default credentials immediately. Use 16+ character passwords with mixed case, numbers, and symbols.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-sync-alt text-blue-500 text-xl mr-3"></i>
+                            <h4 class="font-bold">Regular Updates</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Keep Raspberry Pi OS and dependencies updated: <code class="bg-gray-100 px-1 rounded">sudo apt update && sudo apt upgrade</code>
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-firewall text-purple-500 text-xl mr-3"></i>
+                            <h4 class="font-bold">Firewall Rules</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Enable UFW firewall. Only allow necessary ports (8000 for LAN, 51820 for WireGuard).
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-network-wired text-orange-500 text-xl mr-3"></i>
+                            <h4 class="font-bold">Network Segmentation</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Place BabyGuard on isolated VLAN or guest network to limit lateral movement if compromised.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-undo text-pink-500 text-xl mr-3"></i>
+                            <h4 class="font-bold">Backup Configurations</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Regularly backup /etc, database files, and custom configurations to external storage.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-6">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-eye-slash text-gray-500 text-xl mr-3"></i>
+                            <h4 class="font-bold">Disable Unused Services</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">
+                            Turn off SSH, VNC, or other services when not needed to reduce attack surface.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 gradient-text">Development Roadmap</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Exciting features coming soon to make BabyGuard even more powerful
+                </p>
+            </div>
+            
+            <div class="relative">
+                <!-- Timeline Line -->
+                <div class="absolute left-1/2 transform -translate-x-1/2 h-full w-1 timeline-line rounded-full"></div>
+                
+                <!-- Timeline Items -->
+                <div class="space-y-12">
+                    <!-- Item 1 -->
+                    <div class="relative flex items-center justify-between" data-aos="fade-up" data-aos-delay="100">
+                        <div class="w-5/12 text-right pr-8">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">AI Cry Detection</h3>
+                            <p class="text-gray-600">
+                                Machine learning model to detect and classify baby cries, 
+                                sending push notifications with cry type (hungry, tired, discomfort).
+                            </p>
+                        </div>
+                        <div class="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-white shadow-lg"></div>
+                        <div class="w-5/12 pl-8">
+                            <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">In Progress</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 2 -->
+                    <div class="relative flex items-center justify-between" data-aos="fade-up" data-aos-delay="200">
+                        <div class="w-5/12 pr-8">
+                            <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Planned</span>
+                        </div>
+                        <div class="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-secondary rounded-full border-4 border-white shadow-lg"></div>
+                        <div class="w-5/12 text-left pl-8">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">Motion & Occupancy Detection</h3>
+                            <p class="text-gray-600">
+                                Computer vision algorithms to detect movement, track baby position, 
+                                and alert if baby leaves crib or covers face.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 3 -->
+                    <div class="relative flex items-center justify-between" data-aos="fade-up" data-aos-delay="300">
+                        <div class="w-5/12 text-right pr-8">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">Push Notifications</h3>
+                            <p class="text-gray-600">
+                                Native mobile push notifications via Firebase Cloud Messaging (FCM) 
+                                or Telegram bot integration for instant alerts.
+                            </p>
+                        </div>
+                        <div class="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-secondary rounded-full border-4 border-white shadow-lg"></div>
+                        <div class="w-5/12 pl-8">
+                            <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Planned</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 4 -->
+                    <div class="relative flex items-center justify-between" data-aos="fade-up" data-aos-delay="400">
+                        <div class="w-5/12 pr-8">
+                            <span class="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">Future</span>
+                        </div>
+                        <div class="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-accent rounded-full border-4 border-white shadow-lg"></div>
+                        <div class="w-5/12 text-left pl-8">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">Facial Emotion Analysis</h3>
+                            <p class="text-gray-600">
+                                Deep learning to detect baby's emotional state (happy, crying, sleeping) 
+                                and provide insights on sleep patterns and mood trends.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 5 -->
+                    <div class="relative flex items-center justify-between" data-aos="fade-up" data-aos-delay="500">
+                        <div class="w-5/12 text-right pr-8">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">React/Angular Frontend</h3>
+                            <p class="text-gray-600">
+                                Modern SPA frontend migration for better UX, offline support with PWA, 
+                                and advanced features like multi-camera support and timeline scrubbing.
+                            </p>
+                        </div>
+                        <div class="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-accent rounded-full border-4 border-white shadow-lg"></div>
+                        <div class="w-5/12 pl-8">
+                            <span class="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">Future</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 hero-gradient relative overflow-hidden">
+        <div class="absolute inset-0 bg-black opacity-30"></div>
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center" data-aos="zoom-in">
+            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+                Ready to Build Your BabyGuard?
+            </h2>
+            <p class="text-xl text-white/90 mb-8">
+                Join the privacy-first baby monitoring revolution. 
+                No subscriptions, no cloud, just peace of mind.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="https://github.com/Zedstron/babymonitor" target="_blank" 
+                   class="px-8 py-4 bg-white text-primary rounded-full font-bold text-lg hover:bg-gray-100 transition transform hover:scale-105 shadow-lg flex items-center justify-center">
+                    <i class="fab fa-github mr-2"></i>
+                    Star on GitHub
+                </a>
+                <a href="#deployment" 
+                   class="px-8 py-4 bg-transparent border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white/10 transition flex items-center justify-center">
+                    <i class="fas fa-rocket mr-2"></i>
+                    Get Started Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fas fa-baby text-2xl text-primary"></i>
+                        <span class="text-xl font-bold">BabyGuard</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">
+                        Privacy-first, self-hosted baby monitoring system built with love and open source.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#overview" class="hover:text-white transition">Overview</a></li>
+                        <li><a href="#features" class="hover:text-white transition">Features</a></li>
+                        <li><a href="#hardware" class="hover:text-white transition">Hardware</a></li>
+                        <li><a href="#software" class="hover:text-white transition">Installation</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="https://github.com/Zedstron/babymonitor" target="_blank" class="hover:text-white transition">GitHub Repository</a></li>
+                        <li><a href="#" class="hover:text-white transition">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition">Issue Tracker</a></li>
+                        <li><a href="#" class="hover:text-white transition">Community Forum</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Tech Stack</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-gray-800 rounded-full text-xs">FastAPI</span>
+                        <span class="px-3 py-1 bg-gray-800 rounded-full text-xs">WebRTC</span>
+                        <span class="px-3 py-1 bg-gray-800 rounded-full text-xs">Raspberry Pi</span>
+                        <span class="px-3 py-1 bg-gray-800 rounded-full text-xs">Socket.IO</span>
+                        <span class="px-3 py-1 bg-gray-800 rounded-full text-xs">Python</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">
+                    © 2026 BabyGuard. MIT License. Built with ❤️ by Zedstron.
+                </p>
+                <div class="flex space-x-4">
+                    <a href="https://github.com/Zedstron/babymonitor" target="_blank" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-discord text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <script>
+        // Initialize AOS Animation Library
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true,
+            offset: 100
+        });
+        
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('shadow-md');
+            } else {
+                navbar.classList.remove('shadow-md');
+            }
+        });
+        
+        // Smooth Scroll for Anchor Links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // Close mobile menu if open
+                    document.getElementById('mobile-menu').classList.add('hidden');
+                }
+            });
+        });
+        
+        // Add parallax effect to hero section
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero-gradient');
+            if (hero) {
+                hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+            }
+        });
+    </script>
+</body>
+</html>

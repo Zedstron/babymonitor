@@ -10,6 +10,7 @@ from helpers.models import *
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.orm import Session
+from threading import Thread
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -913,13 +914,12 @@ async def start_record(request: Request):
     if state.recorder:
         return { "status": False, "message": "Recording already started" }
 
-    state.recorder = MediaRecorder("recordings/" + ts_filename(ext='ts'))
+    state.recorder = MediaRecorder("recordings/" + ts_filename(ext='mp4'))
 
     state.recorder.addTrack(CameraVideoTrack(camera))
     state.recorder.addTrack(MicrophoneTrack(audio))
 
-    import threading
-    state.recorder_task = threading.Thread(target=start_recorder, args=(state.recorder,))
+    state.recorder_task = Thread(target=start_recorder, args=(state.recorder,))
     state.recorder_task.start()
 
     state.is_recording = True

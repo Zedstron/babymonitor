@@ -255,6 +255,7 @@ class CameraVideoTrack(VideoStreamTrack):
     def __init__(self, controller: CameraController):
         super().__init__()
         self.controller = controller
+        self.last_pts = 0
 
     async def recv(self):
         pts, time_base = await self.next_timestamp()
@@ -263,4 +264,5 @@ class CameraVideoTrack(VideoStreamTrack):
             video = VideoFrame.from_ndarray(frame, format="rgb24")
             video.pts = pts
             video.time_base = time_base
+
             return video
