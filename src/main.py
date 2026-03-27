@@ -6,7 +6,7 @@ import time
 import uuid
 import asyncio
 import socketio
-from src.helpers.models import *
+from helpers.models import *
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -19,24 +19,24 @@ from typing import Dict, List, Optional, AsyncGenerator
 from aiortc.sdp import candidate_from_sdp
 from aiortc.contrib.media import MediaRecorder
 
-from src.helpers.database import *
-from src.helpers.tokenizer import create_token, decode_token
-from src.helpers.logger import logger
+from helpers.database import *
+from helpers.tokenizer import create_token, decode_token
+from helpers.logger import logger
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form, Depends, status
 from aiortc import RTCPeerConnection, RTCSessionDescription
 
-from src.utils import *
+from utils import *
 
-from src.controllers.media import MediaController
-from src.controllers.audio import AudioController, MicrophoneTrack
-from src.controllers.camera import CameraController, CameraVideoTrack
-from src.controllers.gpio import GPIOController, IndicatorColor, IndicatorState
-from src.controllers.weather import get_current_weather
-from src.controllers.resources import get_system_health
-from src.controllers.wireguard import WireGuard
-from src.controllers.whitenoise import WhiteNoisePlayer
-from src.controllers.infrared import IRController
+from controllers.media import MediaController
+from controllers.audio import AudioController, MicrophoneTrack
+from controllers.camera import CameraController, CameraVideoTrack
+from controllers.gpio import GPIOController, IndicatorColor, IndicatorState
+from controllers.weather import get_current_weather
+from controllers.resources import get_system_health
+from controllers.wireguard import WireGuard
+from controllers.whitenoise import WhiteNoisePlayer
+from controllers.infrared import IRController
 
 from passlib.context import CryptContext
 

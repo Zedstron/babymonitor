@@ -2,11 +2,8 @@ import subprocess
 import re
 
 import socket
-import hashlib
 from datetime import datetime
 from pathlib import Path
-from sqlalchemy.orm import Session
-from helpers.database import User
 from speedtest import Speedtest
 
 def sp_to_label(speed):

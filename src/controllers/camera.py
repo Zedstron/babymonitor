@@ -75,7 +75,7 @@ class CameraController:
         }
 
     def get_recordings(self, limit: int = 50) -> dict:
-        recordings_dir = Path("recordings")
+        recordings_dir = Path("media/recordings")
         items = []
 
         if not recordings_dir.exists():

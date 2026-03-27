@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  babyguard:
+    image: "${IMAGE:-yourdocker/babyguard:latest}"
+    container_name: babyguard
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ../media:/app/media
+      - ../cert:/app/cert
+      - ../assets:/app/assets
+    env_file:
+      - ../.env

@@ -1,8 +1,8 @@
 import subprocess
 import tempfile
 from os import unlink
-from helpers.logger import logger
-from helpers.database import save_ir_device, get_ir_device
+from src.helpers.logger import logger
+from src.helpers.database import save_ir_device, get_ir_device
 
 
 class IRController:

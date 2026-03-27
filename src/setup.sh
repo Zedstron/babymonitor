@@ -63,10 +63,11 @@ EOL
 chmod 600 "$SCRIPT_DIR/.env"
 chown "$RUN_USER":"$RUN_USER" "$SCRIPT_DIR/.env" || true
 
-echo "Generating certificates (interactive openssl prompt may appear)..."
+CERT_SUBJ="/C=US/ST=Unknown/L=Unknown/O=BabyMonitor/OU=Development/CN=babyguard.local"
+echo "Generating certificates (non-interactive)..."
 CERT_DIR="$SCRIPT_DIR/cert"
 if [ ! -d "$CERT_DIR" ] || [ -z "$(ls -A "$CERT_DIR" 2>/dev/null)" ]; then
-  sudo -u "$RUN_USER" -H bash -lc "mkdir -p '$CERT_DIR' && cd '$CERT_DIR' && openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes"
+  sudo -u "$RUN_USER" -H bash -lc "mkdir -p '$CERT_DIR' && cd '$CERT_DIR' && openssl req -x509 -newkey rsa:2048 -nodes -days 365 -keyout key.pem -out cert.pem -subj \"$CERT_SUBJ\""
 else
   echo "Certificate directory already exists and is not empty; skipping cert generation"
 fi

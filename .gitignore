@@ -207,11 +207,14 @@ marimo/_lsp/
 __marimo__/
 
 # Key files
-cert/*
+src/cert/*
 
 # Media Files
-audio/*
-recordings/*
+src/media/recordings/*.mp4
+src/media/recordings/*.ts
+src/media/snapshots/*.jpg
+src/media/thumbnails/*.jpg
+src/media/audio/*.mp3
 
 # Databases
-*.db
+src/*.db

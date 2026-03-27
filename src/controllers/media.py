@@ -3,7 +3,7 @@ from vlc import MediaPlayer, EventType
 from time import sleep
 
 class MediaController:
-    def __init__(self, audio_dir="audio"):
+    def __init__(self, audio_dir="media/audio"):
         self.audio_dir = Path(audio_dir)
         self.audio_dir.mkdir(exist_ok=True)
         self.play_obj = None
