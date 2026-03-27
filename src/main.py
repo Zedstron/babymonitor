@@ -26,7 +26,7 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Redirect
 from fastapi import FastAPI, Request, HTTPException, Response, File, Form, Depends, status
 from aiortc import RTCPeerConnection, RTCSessionDescription
 
-from utils import *
+from src.utils import *
 
 from controllers.media import MediaController
 from controllers.audio import AudioController, MicrophoneTrack
