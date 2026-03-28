@@ -36,8 +36,8 @@
 - Outside weather integration
 
 ### 🎙️ Interaction
-- Push-to-Talk (remote audio to baby room)
-- Media player (lullabies / MP3)
+- Push to TALK
+- Media Player for child soothing
 - White Noise for Sleep
 
 ### 💡 Hardware
@@ -72,7 +72,6 @@
 <p align="center">
   <b>Mediaplayer & Snapshots Gallery</b><br /><br />
   <img src="src/assets/img/screenshot2.png" width="45%"/>
-  <img src="src/assets/img/screenshot3.png" width="45%"/>
 </p>
 <p align="center">
   <b>Resource Usage Tracking</b><br /><br />
@@ -156,8 +155,8 @@ cd babymonitor
 
 ### 2. Update & Upgrade APT repo
 ```bash
-apt update -y
-apt upgrade -y
+sudo apt update -y
+sudo apt upgrade -y
 ```
 
 ### 3. Virtual Env
@@ -174,13 +173,22 @@ pip install -r requirements.txt
 
 Install System Deps:
 ```bash
-sudo apt update
-sudo apt upgrade -y
 sudo apt install -y $(cat packages.txt)
 ```
 
-### 5. SSL
+### 5. ENV File
+Create the .env file with nano or any text editor of your choice and place following variables
+
+```bash
+JWT_SECRET="any alphanumeric strong random value for JWT"
+WEATHER_API_KEY="optional key for current latest weahter"
+```
+
+> Note: Obtain a weather API key at https://home.openweathermap.org/users/sign_in just in case if you are interested in this feature
+
+### 6. SSL
 Generate certificates for https, since for PTT to work we cannot access microphone in browser from http, permission won't be allowed
+
 ```bash
 mkdir cert
 cd cert
@@ -192,7 +200,25 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -node
 ```bash
 python main.py
 ```
+---
 
+An experimental Docker image is published to Docker Hub. This method is NOT Recommended for production and is provided for quick testing only.
+
+## ⚠️ Docker (Experimental)
+
+Before running the container, ensure a `.env` file exists in the project root containing at minimum a `JWT_SECRET`. You may also include an optional `WEATHER_API_KEY` (if omitted, external weather won't be available). You can obtain a weather API key at https://home.openweathermap.org/users/sign_in
+
+Pull the image from Docker Hub:
+
+```bash
+docker pull zedstron/babyguard
+```
+
+Example run (reads variables from `.env`):
+
+```bash
+docker run --env-file .env -p 443:443 zedstron/babyguard
+```
 ---
 
 ## 🔮 Roadmap
