@@ -1,7 +1,21 @@
 version: '3.8'
 services:
   babyguard:
-    image: "${IMAGE:-yourdocker/babyguard:latest}"
+    image: "zedstron/babyguard:latest"
+    build:
+      context: ../src
+      dockerfile: ./Dockerfile
+    platform: linux/arm64
+    privileged: true
+    network_mode: host
+    devices:
+      - /dev/snd
+      - /dev/video0
+      - /dev/gpiomem
+      - /dev/mem
+      - /dev/lirc0
+    group_add:
+      - audio
     container_name: babyguard
     restart: unless-stopped
     ports:

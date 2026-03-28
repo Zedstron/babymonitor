@@ -218,3 +218,6 @@ src/media/audio/*.mp3
 
 # Databases
 src/*.db
+
+# local custom build scripts
+docker/*.bat

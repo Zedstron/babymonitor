@@ -97,20 +97,20 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now babymonitor.service || true
 
 echo "Updating the Rpi hostname"
-sudo hostnamectl set-hostname babymonitor
+sudo hostnamectl set-hostname babyguard
 
 printf "\n\033[32m
-  ____       _                   ____                      _      _           _ 
- / ___|  ___| |_ _   _ _ __     / ___|___  _ __ ___  _ __ | | ___| |_ ___  __| |
- \___ \ / _ \ __| | | | '_ \   | |   / _ \| '_ ` _ \| '_ \| |/ _ \ __/ _ \/ _` |
-  ___) |  __/ |_| |_| | |_) |  | |__| (_) | | | | | | |_) | |  __/ ||  __/ (_| |
- |____/ \___|\__|\__,_| .__/    \____\___/|_| |_| |_| .__/|_|\___|\__\___|\__,_|
-                      |_|                           |_|                                              
+▄█████ ▄▄▄▄▄ ▄▄▄▄▄▄ ▄▄ ▄▄ ▄▄▄▄    ▄█████  ▄▄▄  ▄▄   ▄▄ ▄▄▄▄  ▄▄    ▄▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄▄▄ ▄▄▄▄  
+▀▀▀▄▄▄ ██▄▄    ██   ██ ██ ██▄█▀   ██     ██▀██ ██▀▄▀██ ██▄█▀ ██    ██▄▄    ██   ██▄▄  ██▀██ 
+█████▀ ██▄▄▄   ██   ▀███▀ ██      ▀█████ ▀███▀ ██   ██ ██    ██▄▄▄ ██▄▄▄   ██   ██▄▄▄ ████▀ 
+                                                                                                                                        
+\033[0m\n"
 
+printf "\n\033[36m
                 [Setup Completed, Read following before continue further]
 
         1) Access using https://babyguard.local or LAN IP address with https
         2) It is Highly Recomended to restart the device now.
         3) Make sure your phone/tablet is on same network as of this device
         4) If WAN access is required make sure you have a VPS and open the Frontend to enable WAN mode
-\033[0m\n"
+\033[0m\n" 

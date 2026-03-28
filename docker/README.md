@@ -1,29 +1,42 @@
+# Docker — Experimental
 
-Run a published image (recommended for end users)
+This Docker support is experimental. Only use the containerized method if you know what
+you are doing — this project expects direct access to hardware and low-level services.
 
-1. Create a `.env` in the project root containing at minimum:
+Key warnings
+- **Experimental:** This setup is experimental and may be unstable or crash.
+- **Advanced only:** Use Docker only if you understand device passthrough, host
+	networking, and privileged containers.
+- **Hardware compatibility:** Docker Engine is best compatible with Raspberry Pi 4 or 5
+	on supported OS images. Other platforms or older Pi models may not work reliably.
 
-   SECRET_KEY=your_jwt_secret
-   OPENWEATHER_KEY=your_openweather_api_key
+Required host hardware and services
+- Camera (video device accessible to the process)
+- Audio (ALSA/Pulse access / sound devices)
+- GPIO bus access
+- Infrared service (e.g., `lirc` or equivalent kernel userspace support)
+- Host network access for WireGuard (WireGuard requires host-level networking)
 
-2. Pull and run the prebuilt image (replace `yourdocker/babyguard:tag` with the published tag for your platform):
+Why containers are fragile here
+This application integrates tightly with multiple host subsystems (camera, audio, GPIO,
+infrared, WireGuard). Running inside a container requires exposing those devices and
+services to the container (device mounts, privileged mode, host networking). Even with
+those settings, behavior can be less stable than a direct host install and debugging
+will be harder.
 
-   docker pull yourdocker/babyguard:tag
-   docker run -d --name babyguard -p 443:443 -v "$(pwd)/media:/app/media" --env-file .env yourdocker/babyguard:tag
+Recommended installation
+- Preferred: Install on the host OS (no containerization) or run the included
+	`setup.sh` script to configure the system for all required hardware and services.
+	See [setup.sh](setup.sh) for the recommended host install path.
+- If you must use Docker: this is an advanced, unsupported workflow. You will need to
+	expose devices and run the container with host networking and sufficiently
+	permissive privileges. Expect additional debugging and instability.
 
-Notes for Raspberry Pi / ARM hosts
+Support and issues
+If you experience problems with a containerized setup, reproduce the issue on a
+host install (using `setup.sh`) before filing bugs. Host installs are the baseline
+configuration and are far easier to debug.
 
-- Use an image tag built for your architecture (for example `:armv7` or `:arm64`) or set the platform when running Docker on systems that support multi-arch emulation:
-
-  docker run --platform linux/arm/v7 -d --name babyguard -p 443:443 -v "$(pwd)/media:/app/media" --env-file .env yourdocker/babyguard:armv7
-
-- This repository includes `docker/docker-compose.yml` which by default pulls the registry image. To run with compose from the `docker/` folder, set the `IMAGE` (and optionally `PLATFORM`) env var and run:
-
-  IMAGE=yourdocker/babyguard:tag PLATFORM=linux/arm/v7 docker compose up -d
-
-Developer / Maintainer: building and publishing multi-arch images
-
-- We will publish multi-arch images to a registry so end users don't need to build locally. See `docker/BUILD.md` for the `docker buildx` commands used to produce and push multi-arch manifest tags.
-
-- The container auto-generates a self-signed certificate at `cert/cert.pem`/`cert/key.pem` (non-interactive) if none are present. For production, mount your own certs into `cert/`.
-
+Contact
+For questions or to report hardware compatibility notes, open an issue in this
+repository and include platform details (Pi model, OS image, kernel version).
