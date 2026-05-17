@@ -998,11 +998,16 @@ async def update_sensor_data():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        app_socket,
-        host="0.0.0.0",
-        port=8000,
-        log_level="info",
-        ssl_certfile="cert/cert.pem",
-        ssl_keyfile="cert/key.pem"
-    )
+    import traceback
+    
+    try:
+        uvicorn.run(
+            app_socket,
+            host="0.0.0.0",
+            port=8000,
+            log_level="info",
+            ssl_certfile="cert/cert.pem",
+            ssl_keyfile="cert/key.pem"
+        )
+    except Exception as e:
+        logger.error(traceback.format_exc())
