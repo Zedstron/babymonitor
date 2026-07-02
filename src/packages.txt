@@ -1,4 +1,6 @@
 python3-pyaudio
+portaudio19-dev
+python3-dev
 vlc
 python3-gi
 openresolv
