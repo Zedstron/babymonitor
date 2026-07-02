@@ -48,7 +48,7 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-sudo -u "$RUN_USER" -H bash -lc "python3 -m venv --system-site-packages '$SCRIPT_DIR/venv'"
+sudo -u "$RUN_USER" -H bash -lc "python3 -m venv '$SCRIPT_DIR/venv'"
 sudo -u "$RUN_USER" -H bash -lc "source '$SCRIPT_DIR/venv/bin/activate' && python -m pip install --upgrade pip && python -m pip install -r '$SCRIPT_DIR/requirements.txt' || true"
 
 echo "Creating .env file with SECRET_KEY and OPENWEATHER_KEY (empty)..."
