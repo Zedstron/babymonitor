@@ -42,6 +42,11 @@ from passlib.context import CryptContext
 
 gpio = GPIOController()
 camera = CameraController()
+try:
+    camera.enable()
+    logger.info("Camera enabled successfully")
+except Exception as e:
+    logger.warning(f"Camera enable failed: {e}")
 audio = AudioController()
 media = MediaController()
 whitenoise = WhiteNoisePlayer()

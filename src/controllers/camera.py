@@ -190,6 +190,8 @@ class CameraController:
             frame = np.zeros((480, 640, 3), dtype=np.uint8) if self.black_frame else self.noise_frame()
             return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
+        return frame
+
     def get_jpeg_frame(self) -> Optional[bytes]:
         frame = self.get_frame()
 
