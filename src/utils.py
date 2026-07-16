@@ -18,12 +18,26 @@ def sp_to_label(speed):
     
     return label
 
-def quick_speed_test():
-    st = Speedtest()
-    st.get_servers()
-    st.get_best_server()
-    download_speed = st.download() / 1_000_000
-    upload_speed = st.upload() / 1_000_000
+def quick_speed_test(timeout_sec=15):
+    import concurrent.futures
+
+    def _run():
+        st = Speedtest()
+        st.get_servers()
+        st.get_best_server()
+        download_speed = st.download() / 1_000_000
+        upload_speed = st.upload() / 1_000_000
+        return download_speed, upload_speed
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        try:
+            fut = executor.submit(_run)
+            download_speed, upload_speed = fut.result(timeout=timeout_sec)
+        except:
+            return {
+                "download": { "speed": 0, "label": "No Connection" },
+                "upload": { "speed": 0, "label": "No Connection" }
+            }
 
     if download_speed == 0:
         return {

@@ -8,7 +8,10 @@ class WhiteNoisePlayer:
         self.chunk = chunk
         self.running = False
 
-        self.p = pyaudio.PyAudio()
+        try:
+            self.p = pyaudio.PyAudio()
+        except:
+            self.p = None
         self.thread = None
 
     def __openSpeaker(self):
@@ -27,9 +30,10 @@ class WhiteNoisePlayer:
         try:
             while self.running:
                 noise = np.random.uniform(-1, 1, self.chunk).astype(np.float32)
-                self.stream.write(noise.tobytes())
+                if hasattr(self, 'stream') and self.stream:
+                    self.stream.write(noise.tobytes())
         except:
-            if self.stream:
+            if hasattr(self, 'stream') and self.stream:
                 self.stream.stop_stream()
                 self.stream.close()
 
@@ -50,13 +54,10 @@ class WhiteNoisePlayer:
             self.running = False
             if self.thread:
                 self.thread.join()
-            self.__close()
+            if hasattr(self, 'stream') and self.stream:
+                self.stream.stop_stream()
+                self.stream.close()
 
             return True
         except:
             return False
-
-    def __close(self):
-        self.stop()
-        self.stream.stop_stream()
-        self.stream.close()
