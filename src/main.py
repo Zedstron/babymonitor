@@ -1002,17 +1002,49 @@ async def update_sensor_data():
             await asyncio.sleep(5)
 
 if __name__ == "__main__":
+    import os
     import uvicorn
     import traceback
-    
+
+    CERT_DIR = "cert"
+    CERT_FILE = os.path.join(CERT_DIR, "cert.pem")
+    KEY_FILE = os.path.join(CERT_DIR, "key.pem")
+
+    MEDIA_DIR = "media"
+    AUDIO_DIR = os.path.join(MEDIA_DIR, "audio")
+
     try:
+        # Ensure cert directory exists
+        os.makedirs(CERT_DIR, exist_ok=True)
+
+        # Check certificate files
+        cert_exists = os.path.isfile(CERT_FILE)
+        key_exists = os.path.isfile(KEY_FILE)
+
+        if not cert_exists or not key_exists:
+            logger.error(
+                f"SSL certificate files missing. "
+                f"cert exists: {cert_exists}, key exists: {key_exists}"
+            )
+            raise FileNotFoundError(
+                "Required SSL certificate files not found in cert/"
+            )
+
+        # Ensure media directories exist
+        os.makedirs(MEDIA_DIR, exist_ok=True)
+        os.makedirs(AUDIO_DIR, exist_ok=True)
+
         uvicorn.run(
             app_socket,
             host="0.0.0.0",
             port=8000,
             log_level="info",
-            ssl_certfile="cert/cert.pem",
-            ssl_keyfile="cert/key.pem"
+            ssl_certfile=CERT_FILE,
+            ssl_keyfile=KEY_FILE
         )
-    except Exception as e:
+
+    except Exception:
         logger.error(traceback.format_exc())
+        logger.error(
+            "It seems some dependencies or required files/directories are missing"
+        )
