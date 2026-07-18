@@ -221,3 +221,6 @@ src/*.db
 
 # local custom build scripts
 docker/*.bat
+
+# log file
+logs.txt

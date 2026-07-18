@@ -1,3 +1,4 @@
+import sys
 import logging
 from colorlog import ColoredFormatter
 
@@ -12,10 +13,16 @@ formatter = ColoredFormatter(
     }
 )
 
-console_handler = logging.StreamHandler()
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
+console_handler = logging.StreamHandler(sys.stderr)
 console_handler.setFormatter(formatter)
 
-file_handler = logging.FileHandler("logs.txt")
+file_handler = logging.FileHandler("logs.txt", encoding="utf-8")
 file_formatter = logging.Formatter(
     '[%(levelname)s] %(asctime)s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'

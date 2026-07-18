@@ -130,54 +130,29 @@ class MicrophoneTrack(MediaStreamTrack):
         self.samples_per_frame = controller.chunk
         self.sample_rate = controller.rate
 
-        self._bytes_per_sample = 2
-        self._expected_bytes = self.samples_per_frame * self._bytes_per_sample
-
-        self._timestamp = 0
-        self._time_base = Fraction(1, self.sample_rate)
+        self.pts = 0
 
     async def recv(self):
-        try:
-            loop = asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
 
-            if self.controller._mic:
-                data = await loop.run_in_executor(
-                    None,
-                    self.controller._mic.read,
-                    self.samples_per_frame,
-                    False
-                )
+        data = await loop.run_in_executor(
+            None,
+            self.controller._mic.read,
+            self.samples_per_frame,
+            False
+        )
 
-                if len(data) < self._expected_bytes:
-                    data += b'\x00' * (self._expected_bytes - len(data))
-                elif len(data) > self._expected_bytes:
-                    data = data[:self._expected_bytes]
+        frame = AudioFrame(
+            format="s16",
+            layout="mono",
+            samples=self.samples_per_frame,
+        )
 
-                data = np.frombuffer(data, dtype=np.int16)
-
-                samples = np.empty(data.size * 2, dtype=np.int16)
-                samples[0::2] = data
-                samples[1::2] = data
-            else:
-                samples = np.random.randint(
-                    -32768, 32767,
-                    self.samples_per_frame,
-                    dtype=np.int16
-                )
-
-        except Exception:
-            samples = np.zeros(self.samples_per_frame, dtype=np.int16)
-
-        samples = samples.reshape(1, -1)
-
-        frame = AudioFrame.from_ndarray(samples, format="s16", layout="stereo")
+        frame.planes[0].update(data)
         frame.sample_rate = self.sample_rate
-
-        frame.pts = self._timestamp
-        frame.time_base = self._time_base
-
-        self._timestamp += self.samples_per_frame
-
-        await asyncio.sleep(AUDIO_PTIME)
-
+        frame.time_base = Fraction(1, self.sample_rate)
+    
+        frame.pts = self.pts
+        self.pts += self.samples_per_frame
+    
         return frame

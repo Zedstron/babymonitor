@@ -42,11 +42,13 @@ from passlib.context import CryptContext
 
 gpio = GPIOController()
 camera = CameraController()
+
 try:
     camera.enable()
     logger.info("Camera enabled successfully")
 except Exception as e:
     logger.warning(f"Camera enable failed: {e}")
+
 audio = AudioController()
 media = MediaController()
 whitenoise = WhiteNoisePlayer()
@@ -76,6 +78,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 def is_excluded(path: str) -> bool:
     if path in EXCLUDED_PATHS:
         return True
+
     return any(path.startswith(prefix) for prefix in EXCLUDED_PREFIXES)
 
 @asynccontextmanager
@@ -330,18 +333,18 @@ async def frame():
 
 @app.post("/streaming/offer")
 async def offer(request: Request):
-
     params = await request.json()
     offer = RTCSessionDescription(**params)
 
     pc = RTCPeerConnection()
+    await pc.setRemoteDescription(offer)
+
     pc_id = str(uuid.uuid4())
+
     state.pcs[pc_id] = pc
 
     pc.addTrack(CameraVideoTrack(camera))
     pc.addTrack(MicrophoneTrack(audio))
-
-    await pc.setRemoteDescription(offer)
 
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
@@ -357,21 +360,6 @@ async def offer(request: Request):
         "sdp": pc.localDescription.sdp,
         "type": pc.localDescription.type
     }
-
-@app.post("/streaming/candidate")
-async def candidate(request: Request):
-
-    params = await request.json()
-
-    pc = state.pcs[params["pc_id"]]
-
-    cand = candidate_from_sdp(params["candidate"])
-    cand.sdpMid = params["sdpMid"]
-    cand.sdpMLineIndex = params["sdpMLineIndex"]
-
-    await pc.addIceCandidate(cand)
-
-    return { "status": "ok" }
 
 @app.post("/streaming/close")
 async def close_pc(request: Request):
@@ -1014,23 +1002,15 @@ if __name__ == "__main__":
     AUDIO_DIR = os.path.join(MEDIA_DIR, "audio")
 
     try:
-        # Ensure cert directory exists
         os.makedirs(CERT_DIR, exist_ok=True)
 
-        # Check certificate files
         cert_exists = os.path.isfile(CERT_FILE)
         key_exists = os.path.isfile(KEY_FILE)
 
         if not cert_exists or not key_exists:
-            logger.error(
-                f"SSL certificate files missing. "
-                f"cert exists: {cert_exists}, key exists: {key_exists}"
-            )
-            raise FileNotFoundError(
-                "Required SSL certificate files not found in cert/"
-            )
+            logger.error(f"SSL certificate files missing. cert exists: {cert_exists}, key exists: {key_exists}")
+            raise FileNotFoundError("Required SSL certificate files not found in cert/")
 
-        # Ensure media directories exist
         os.makedirs(MEDIA_DIR, exist_ok=True)
         os.makedirs(AUDIO_DIR, exist_ok=True)
 
@@ -1045,6 +1025,3 @@ if __name__ == "__main__":
 
     except Exception:
         logger.error(traceback.format_exc())
-        logger.error(
-            "It seems some dependencies or required files/directories are missing"
-        )

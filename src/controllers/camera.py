@@ -1,10 +1,13 @@
 import cv2
+from fractions import Fraction
 import numpy as np
 from typing import Optional, Tuple
-from aiortc import VideoStreamTrack
+from aiortc import MediaStreamTrack
 from av.video.frame import VideoFrame
 from pathlib import Path
 import subprocess
+import asyncio
+from time import time
 from datetime import datetime
 
 try:
@@ -251,20 +254,31 @@ class CameraController:
         return self._recording
 
 
-class CameraVideoTrack(VideoStreamTrack):
+class CameraVideoTrack(MediaStreamTrack):
     kind = "video"
 
     def __init__(self, controller: CameraController):
         super().__init__()
         self.controller = controller
-        self.last_pts = 0
+        self.fps = controller._framerate
+        self.frame_count = 0
+        self.start_time = time()
 
     async def recv(self):
-        pts, time_base = await self.next_timestamp()
-        frame = self.controller.get_frame()
-        if frame is not None:
-            video = VideoFrame.from_ndarray(frame, format="rgb24")
-            video.pts = pts
-            video.time_base = time_base
+        target_time = self.start_time + self.frame_count / self.fps
+        delay = target_time - time()
+    
+        if delay > 0:
+            await asyncio.sleep(delay)
 
-            return video
+        frame = self.controller.get_frame()
+
+        if frame is not None:
+            frame = VideoFrame.from_ndarray(frame, format="rgb24")
+            
+            frame.pts = self.frame_count
+            frame.time_base = Fraction(1, self.fps)
+    
+            self.frame_count += 1
+
+            return frame
