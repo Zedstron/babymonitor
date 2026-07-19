@@ -3,22 +3,28 @@ from fastapi import APIRouter, Request
 from controllers.infrared import IRController
 from controllers.wireguard import WireGuard
 from helpers.logger import logger
-from utils import get_ir_device, get_ir_devices, remove_ir_device
+from controllers.whitenoise import WhiteNoisePlayer
+from helpers.database import get_ir_device, get_ir_devices, remove_ir_device
 
 
-def create_router(whitenoise):
+def create_router(_, __):
+    whitenoise = WhiteNoisePlayer()
     router = APIRouter(prefix="/api")
 
     @router.post("/ir/")
     async def add_new_ir(request: Request):
         data = await request.json()
+        
         if "tag" not in data:
             return { "status": False, "message": "Tag is required for recording signals" }
+        
         tag = data.get("tag")
         frequency = data.get("frequency", 38888)
         ir = IRController(freq=frequency)
+        
         if ir.record(tag):
             return { "status": True, "message": "Signal has been recorded & saved" }
+        
         return { "status": False, "message": "Error occured either hardware issue or TAG not unique" }
 
     @router.get("/ir/")
@@ -32,8 +38,10 @@ def create_router(whitenoise):
     @router.delete("/ir/{id}")
     async def delete_ir(id: int):
         response = { "status": False, "message": "Device not found or invalid ID" }
+        
         if remove_ir_device(id):
             response.update({ "status": True, "message": "Successfully Removed" })
+        
         return response
 
     @router.post("/ir/{id}/send")
@@ -41,8 +49,10 @@ def create_router(whitenoise):
         try:
             ir = IRController()
             result = ir.send(id)
+        
             if not result:
                 return { "status": False, "message": "Failed to send IR signal" }
+        
             return { "status": True, "message": "IR signal sent" }
         except Exception as e:
             logger.error(f"IR send error: {e}")
@@ -75,11 +85,13 @@ def create_router(whitenoise):
     @router.post("/wireguard")
     async def update_wireguard(request: Request):
         data = await request.json()
+        
         if len(data) > 0:
             wire = WireGuard()
             status = wire.save_config(data)
             message = "Wireguard Settings updated Successfully" if status else "Error occured while udpating wireguard settings"
             return { "status": status, "message": message }
+        
         return { "status": False, "message": "No config provided nothing updated" }
 
     return router

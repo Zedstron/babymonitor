@@ -2,6 +2,7 @@ import subprocess
 import re
 
 import socket
+from time import time
 from datetime import datetime
 from pathlib import Path
 from speedtest import Speedtest
@@ -167,3 +168,16 @@ def set_hostname(new_hostname: str):
         return False
 
     return True
+
+async def add_notification(message: str, state, sio):
+    note = {
+        "message": message,
+        "time": datetime.now().strftime("%H:%M"),
+        "id": f"{int(time())}"
+    }
+    state.notifications.append(note)
+
+    if len(state.notifications) > state.max_notifications:
+        state.notifications = state.notifications[-state.max_notifications:]
+    
+    await sio.emit('notification_new', note)

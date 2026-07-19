@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request
+from controllers.audio import AudioController
 
-
-def create_router(audio, state, sio):
+def create_router(state, sio):
+    audio = AudioController()
     router = APIRouter(prefix="/api/audio")
 
     @router.post("/play")

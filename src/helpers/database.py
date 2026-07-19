@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine, Column, Integer, String, JSON, Text, exists
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+from helpers.tokenizer import decode_token
+from fastapi import Request, Depends
 import json
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./nursery.db"
@@ -141,3 +143,14 @@ def get_ir_devices():
 
 def check_new_install(db: Session):
     return db.query(User).count() == 0
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("nursery")
+    if not token:
+        return None
+
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    return db.query(User).filter(User.id == payload.get("id")).first()
