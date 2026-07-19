@@ -50,6 +50,7 @@ class GPIOController:
     def read_sensors(self):
         temp = None
         hum = None
+
         if self._dht:
             try:
                 t = self._dht.temperature
@@ -60,18 +61,23 @@ class GPIOController:
                     hum = round(h, 1)
             except:
                 pass
+
         return {"temp": temp, "humidity": hum}
 
     async def beep(self, duration: float, frequency: int):
         if "buzzer" not in self._components:
             return
+        
         self._components["buzzer"].on()
+        
         await asyncio.sleep(duration)
+        
         self._components["buzzer"].off()
 
     def enable_ir(self, enable: bool):
         if "yellow" not in self._components:
             return
+        
         if enable:
             self._components["yellow"].on()
         else:
@@ -90,8 +96,10 @@ class GPIOController:
         if state == IndicatorState.ACTIVE:
             self._all_off()
             led.on()
+        
         elif state == IndicatorState.INACTIVE:
             led.off()
+        
         elif state == IndicatorState.BLINK:
             async def _blink():
                 while True:
@@ -99,11 +107,14 @@ class GPIOController:
                     await asyncio.sleep((blink_pulse or 500) / 1000)
                     led.off()
                     await asyncio.sleep((delay_before_next_pulse or 500) / 1000)
+            
             asyncio.create_task(_blink())
+        
         elif state == IndicatorState.blink_pulse:
             async def _pulse():
                 led.on()
                 await asyncio.sleep((blink_pulse or 200) / 1000)
                 led.off()
                 await asyncio.sleep((delay_before_next_pulse or 1000) / 1000)
+            
             asyncio.create_task(_pulse())

@@ -19,6 +19,7 @@ class IRController:
         pulses = []
         for line in proc.stdout:
             parts = line.strip().split()
+            
             if len(parts) == 2:
                 _, value = parts
                 pulses.append(int(value))

@@ -158,10 +158,12 @@ class CameraController:
     def enable(self):
         if not self._camera or self._enabled:
             return
+
         config = self._camera.create_video_configuration(
             main={"size": self._resolution, "format": "RGB888"},
             controls={"FrameRate": self._framerate}
         )
+
         self._camera.configure(config)
         self._camera.start()
         self._enabled = True
@@ -169,10 +171,12 @@ class CameraController:
     def disable(self):
         if not self._camera or not self._enabled:
             return
+
         try:
             self._camera.stop()
         except:
             pass
+
         self._enabled = False
 
     def is_enabled(self):

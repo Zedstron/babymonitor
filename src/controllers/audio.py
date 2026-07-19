@@ -108,12 +108,6 @@ class AudioController:
             "amplitude": int(rms),
             "label": label
         }
-
-    async def mic_stream(self):
-        loop = asyncio.get_running_loop()
-        while True:
-            data = await loop.run_in_executor(None, self._mic.read, self.chunk, False)
-            yield data
     
     def close_mic(self):
         if self._mic:
@@ -131,11 +125,10 @@ class MicrophoneTrack(MediaStreamTrack):
         self.sample_rate = controller.rate
 
         self.pts = 0
+        self.loop = asyncio.get_running_loop()
 
     async def recv(self):
-        loop = asyncio.get_running_loop()
-
-        data = await loop.run_in_executor(
+        data = await self.loop.run_in_executor(
             None,
             self.controller._mic.read,
             self.samples_per_frame,

@@ -25,12 +25,14 @@ def create_router(state, _):
                 "request": request,
                 "is_new_install": check_new_install(db)
             })
+        
         return RedirectResponse(url="/dashboard", status_code=303)
 
     @router.get("/logout")
     async def logout(user: User = Depends(get_current_user)):
         response = RedirectResponse(url="/", status_code=303)
         response.delete_cookie("nursery")
+
         return response
 
     @router.get("/dashboard", response_class=HTMLResponse)
@@ -57,7 +59,10 @@ def create_router(state, _):
 
             state.user_profile.update({ "user_name": username, "email": None })
 
-            return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+            res = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+            res.set_cookie(key="nursery", value=create_token({ "id": user.id, "username": user.username }), httponly=True, max_age=60*60*24*7, secure=True, samesite="lax")
+
+            return res
 
         user = db.query(User).filter(User.username == username).first()
 
