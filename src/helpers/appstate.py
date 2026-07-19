@@ -3,14 +3,33 @@ from helpers.logger import logger
 from aiortc import RTCPeerConnection
 from typing import Dict, List, Optional
 from helpers.utils import quick_speed_test
-from aiortc.contrib.media import MediaRecorder
+from controllers.gpio import GPIOController
+from controllers.audio import AudioController, MicrophoneTrack
+from controllers.camera import CameraController, CameraVideoTrack
+from aiortc.contrib.media import MediaRecorder, MediaRelay
 from helpers.database import get_settings, save_settings, get_profile
 
 class AppState:
-    def __init__(self, volume):
+    def __init__(self):
         self.pcs: dict[str, RTCPeerConnection] = dict()
         self.recorder: MediaRecorder = None
-        self.recorder_task = None
+        self.relay = MediaRelay()
+
+        self.audio = AudioController()
+        self.camera = CameraController()
+        self.gpio = GPIOController()
+
+        self.cam_track = CameraVideoTrack(self.camera)
+        self.aud_track = MicrophoneTrack(self.audio)
+
+        self.vtrack = self.relay.subscribe(self.cam_track)
+        self.atrack = self.relay.subscribe(self.aud_track)
+
+        try:
+            self.camera.enable()
+            logger.info("Camera enabled successfully")
+        except Exception as e:
+            logger.warning(f"Camera enable failed: {e}")
 
         self.connected_clients: Dict[str, dict] = {}
 
@@ -42,7 +61,7 @@ class AppState:
         self.current_recording_path: Optional[str] = None
 
         self.audio_listen_enabled = True
-        self.current_volume = volume
+        self.current_volume = self.audio.get_volume()
         
         self.start_time = time()
 

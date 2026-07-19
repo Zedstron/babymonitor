@@ -14,7 +14,7 @@ from controllers.resources import get_system_health
 
 from helpers.database import check_new_install, get_db, User, get_current_user, get_ir_devices
 
-def create_router(state, _):
+def create_router(_):
     router = APIRouter()
     templates = Jinja2Templates(directory="templates")
 
@@ -41,7 +41,7 @@ def create_router(state, _):
             return templates.TemplateResponse("index.html", {
                 "request": request,
                 "user": user,
-                **get_template_context(state)
+                **get_template_context(request.app.state.appstate)
             })
         
         return RedirectResponse("/?error=expired")
@@ -57,7 +57,7 @@ def create_router(state, _):
             db.add(User(username=username, password=hashed))
             db.commit()
 
-            state.user_profile.update({ "user_name": username, "email": None })
+            request.app.state.appstate.user_profile.update({ "user_name": username, "email": None })
 
             res = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
             res.set_cookie(key="nursery", value=create_token({ "id": user.id, "username": user.username }), httponly=True, max_age=60*60*24*7, secure=True, samesite="lax")

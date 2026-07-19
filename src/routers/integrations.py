@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Request
-
 from controllers.infrared import IRController
 from controllers.wireguard import WireGuard
 from helpers.logger import logger
 from controllers.whitenoise import WhiteNoisePlayer
 from helpers.database import get_ir_device, get_ir_devices, remove_ir_device
 
-
-def create_router(_, __):
+def create_router(_):
     whitenoise = WhiteNoisePlayer()
     router = APIRouter(prefix="/api")
 

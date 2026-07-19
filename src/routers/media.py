@@ -1,19 +1,19 @@
 import asyncio
-from fastapi import APIRouter, File, Form, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, Request
 from fastapi.responses import FileResponse
 from controllers.media import MediaController
 
 media = MediaController()
 
-def create_router(state, sio):
+def create_router(sio):
     router = APIRouter(prefix="/api/media")
 
     @router.get("/{index}/play")
-    async def play_media(index: int):
+    async def play_media(request: Request, index: int):
         loop = asyncio.get_event_loop()
 
         def event(payload):
-            if len(state.connected_clients) > 0:
+            if len(request.app.state.appstate.connected_clients) > 0:
                 loop.create_task(sio.emit("media_track_position", payload ))
 
         lullabies = media.getlist()

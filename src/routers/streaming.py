@@ -6,26 +6,17 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaRecorder
 from fastapi import APIRouter, Request, Response
 
-from controllers.audio import AudioController, MicrophoneTrack
-from controllers.camera import CameraController, CameraVideoTrack
+from controllers.audio import MicrophoneTrack
+from controllers.camera import CameraVideoTrack
 from helpers.utils import ts_filename
 from helpers.logger import logger
 
-camera = CameraController()
-audio = AudioController()
-
-try:
-    camera.enable()
-    logger.info("Camera enabled successfully")
-except Exception as e:
-    logger.warning(f"Camera enable failed: {e}")
-
-def create_router(state, _):
+def create_router(_):
     router = APIRouter()
 
     @router.get("/api/video/frame")
-    async def frame():
-        data = camera.get_jpeg_frame()
+    async def frame(request: Request):
+        data = request.app.state.appstate.camera.get_jpeg_frame()
         return Response(content=data, media_type="image/jpeg")
 
     @router.post("/streaming/offer")
@@ -37,10 +28,10 @@ def create_router(state, _):
         await pc.setRemoteDescription(offer)
 
         pc_id = str(uuid.uuid4())
-        state.pcs[pc_id] = pc
+        request.app.state.appstate.pcs[pc_id] = pc
 
-        pc.addTrack(CameraVideoTrack(camera))
-        pc.addTrack(MicrophoneTrack(audio))
+        pc.addTrack(request.app.state.appstate.relay.subscribe(request.app.state.appstate.cam_track))
+        pc.addTrack(request.app.state.appstate.relay.subscribe(request.app.state.appstate.aud_track))
 
         answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
@@ -49,7 +40,7 @@ def create_router(state, _):
         async def state_change():
             if pc.connectionState in ["failed", "closed"]:
                 await pc.close()
-                state.pcs.pop(pc_id, None)
+                request.app.state.appstate.pcs.pop(pc_id, None)
 
         return { "id": pc_id, "sdp": pc.localDescription.sdp, "type": pc.localDescription.type }
 
@@ -58,7 +49,7 @@ def create_router(state, _):
         params = await request.json()
 
         pc_id = params.get("pc_id")
-        pc = state.pcs.pop(pc_id, None)
+        pc = request.app.state.appstate.pcs.pop(pc_id, None)
 
         if pc:
             await pc.close()
@@ -67,25 +58,21 @@ def create_router(state, _):
 
     @router.post("/api/recording/start")
     async def start_record(request: Request):
-        def start_recorder(recorder: MediaRecorder):
-            asyncio.run(recorder.start())
-
         data = await request.json()
 
-        pc = state.pcs.get(data["pc_id"])
+        pc = request.app.state.appstate.pcs.get(data["pc_id"])
         if not pc:
             return { "status": True, "message": "PeerConnection not found" }
 
-        if state.recorder:
+        if request.app.state.appstate.recorder:
             return { "status": False, "message": "Recording already started" }
 
-        state.recorder = MediaRecorder("media/recordings/" + ts_filename(ext='mp4'))
-        state.recorder.addTrack(CameraVideoTrack(camera))
-        state.recorder.addTrack(MicrophoneTrack(audio))
+        request.app.state.appstate.recorder = MediaRecorder("media/recordings/" + ts_filename(ext='mp4'))
+        request.app.state.appstate.recorder.addTrack(request.app.state.appstate.vtrack)
+        request.app.state.appstate.recorder.addTrack(request.app.state.appstate.atrack)
 
-        state.recorder_task = Thread(target=start_recorder, args=(state.recorder,))
-        state.recorder_task.start()
-        state.is_recording = True
+        await request.app.state.appstate.recorder.start()
+        request.app.state.appstate.is_recording = True
 
         return { "status": True, "message": "Recording has been started Successfully" }
 
@@ -93,14 +80,12 @@ def create_router(state, _):
     async def stop_record(request: Request):
         data = await request.json()
 
-        if not state.recorder or not data["pc_id"]:
+        if not request.app.state.appstate.recorder or not data["pc_id"]:
             return { "status": False, "message": "No active recording or PC Id provided" }
 
-        await state.recorder.stop()
+        await request.app.state.appstate.recorder.stop()
 
-        state.recorder = None
-        state.recorder_task = None
-
+        request.app.state.appstate.recorder = None
         return { "status": True, "message": "Recording has been saved" }
 
     return router

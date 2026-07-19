@@ -10,7 +10,7 @@ from helpers.logger import logger
 
 camera = CameraController()
 
-def create_router(_, sio):
+def create_router(sio):
     router = APIRouter()
 
     @router.get("/api/recordings")

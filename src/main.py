@@ -7,8 +7,6 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from controllers.audio import AudioController
-from controllers.gpio import GPIOController
 
 from typing import AsyncGenerator
 
@@ -31,7 +29,6 @@ routers = (
     integration_routes, media_routes, page_routes,
     streaming_routes, system_routes 
 )
-state = AppState(AudioController().get_volume())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -41,6 +38,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     Path("media/recordings").mkdir(exist_ok=True)
     Path("media/snapshots").mkdir(exist_ok=True)
+
+    app.state.appstate = AppState()
+    sio.appstate = app.state.appstate
     
     logger.info("✅ Background tasks started")
     yield
@@ -53,10 +53,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # except asyncio.CancelledError:
     #     pass
 
-    for pc in state.pcs.copy():
-        await state.pcs[pc].close()
+    for pc in app.state.appstate.pcs.copy():
+        await app.state.appstate.pcs[pc].close()
 
-    state.pcs.clear()
+    app.state.appstate.pcs.clear()
     logger.info("✅ Shutdown complete")
 
 app = FastAPI(
@@ -88,17 +88,14 @@ app.add_middleware(
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 for router in routers:
-    r = router.create_router(state, sio)
+    r = router.create_router(sio)
     if r:
         app.include_router(r)
 
-async def update_sensor_data():
-    gpio = GPIOController()
-    audio = AudioController()
-
+async def update_sensor_data(state):
     while True:
         try:
-            sensors = gpio.read_sensors()
+            sensors = state.gpio.read_sensors()
 
             if sensors["temperature"] is not None:
                 state.sensor_data["temperature"] = sensors["temperature"]
@@ -107,8 +104,8 @@ async def update_sensor_data():
                 state.sensor_data["humidity"] = sensors["humidity"]
             
             if state.audio_listen_enabled:
-                state.sensor_data["noise"] = audio.get_mic_level()
-                state.sensor_data.update(audio.guess_occupancy())
+                state.sensor_data["noise"] = state.audio.get_mic_level()
+                state.sensor_data.update(state.audio.guess_occupancy())
 
             await sio.emit('sensor_update', state.sensor_data)
             
