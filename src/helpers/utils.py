@@ -20,10 +20,6 @@ def sp_to_label(speed):
     return label
 
 def quick_speed_test(timeout_sec=15):
-    return {
-            "download": { "speed": 0, "label": "No Connection" },
-            "upload": { "speed": 0, "label": "No Connection" }
-        }
     import concurrent.futures
 
     def _run():

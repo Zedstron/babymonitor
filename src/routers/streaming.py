@@ -1,15 +1,12 @@
 import uuid
-from threading import Thread
-import asyncio
 
 from aiortc import RTCPeerConnection, RTCSessionDescription
-from aiortc.contrib.media import MediaRecorder
+from aiortc.contrib.media import MediaRecorder, MediaRelay
 from fastapi import APIRouter, Request, Response
 
-from controllers.audio import MicrophoneTrack
-from controllers.camera import CameraVideoTrack
 from helpers.utils import ts_filename
-from helpers.logger import logger
+
+relay = MediaRelay()
 
 def create_router(_):
     router = APIRouter()
@@ -30,8 +27,8 @@ def create_router(_):
         pc_id = str(uuid.uuid4())
         request.app.state.appstate.pcs[pc_id] = pc
 
-        pc.addTrack(request.app.state.appstate.relay.subscribe(request.app.state.appstate.cam_track))
-        pc.addTrack(request.app.state.appstate.relay.subscribe(request.app.state.appstate.aud_track))
+        pc.addTrack(relay.subscribe(request.app.state.appstate.vtrack, buffered=True))
+        pc.addTrack(relay.subscribe(request.app.state.appstate.atrack, buffered=True))
 
         answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
@@ -68,8 +65,9 @@ def create_router(_):
             return { "status": False, "message": "Recording already started" }
 
         request.app.state.appstate.recorder = MediaRecorder("media/recordings/" + ts_filename(ext='mp4'))
-        request.app.state.appstate.recorder.addTrack(request.app.state.appstate.vtrack)
-        request.app.state.appstate.recorder.addTrack(request.app.state.appstate.atrack)
+
+        request.app.state.appstate.recorder.addTrack(relay.subscribe(request.app.state.appstate.vtrack, buffered=False))
+        request.app.state.appstate.recorder.addTrack(relay.subscribe(request.app.state.appstate.atrack, buffered=False))
 
         await request.app.state.appstate.recorder.start()
         request.app.state.appstate.is_recording = True

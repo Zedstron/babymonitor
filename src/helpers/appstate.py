@@ -4,26 +4,22 @@ from aiortc import RTCPeerConnection
 from typing import Dict, List, Optional
 from helpers.utils import quick_speed_test
 from controllers.gpio import GPIOController
+from aiortc.contrib.media import MediaRecorder
 from controllers.audio import AudioController, MicrophoneTrack
 from controllers.camera import CameraController, CameraVideoTrack
-from aiortc.contrib.media import MediaRecorder, MediaRelay
 from helpers.database import get_settings, save_settings, get_profile
 
 class AppState:
     def __init__(self):
         self.pcs: dict[str, RTCPeerConnection] = dict()
         self.recorder: MediaRecorder = None
-        self.relay = MediaRelay()
 
         self.audio = AudioController()
         self.camera = CameraController()
         self.gpio = GPIOController()
 
-        self.cam_track = CameraVideoTrack(self.camera)
-        self.aud_track = MicrophoneTrack(self.audio)
-
-        self.vtrack = self.relay.subscribe(self.cam_track)
-        self.atrack = self.relay.subscribe(self.aud_track)
+        self.vtrack = CameraVideoTrack(self.camera)
+        self.atrack = MicrophoneTrack(self.audio)
 
         try:
             self.camera.enable()
