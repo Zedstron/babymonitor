@@ -4,25 +4,21 @@ load_dotenv()
 import asyncio
 import socketio
 from pathlib import Path
-from contextlib import asynccontextmanager
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-
-from typing import AsyncGenerator
-
-from helpers.logger import logger
 from fastapi import FastAPI
-
+from typing import AsyncGenerator
+from helpers.logger import logger
 from helpers.appstate import AppState
-
-from routers import audio as audio_routes
-from routers import gallery as gallery_routes
-from routers import integrations as integration_routes
-from routers import media as media_routes
 from routers import pages as page_routes
-from routers import streaming as streaming_routes
+from routers import media as media_routes
+from routers import audio as audio_routes
+from contextlib import asynccontextmanager
 from routers import system as system_routes
+from fastapi.staticfiles import StaticFiles
+from routers import gallery as gallery_routes
 from routers import socketio as socket_routes
+from routers import streaming as streaming_routes
+from fastapi.middleware.cors import CORSMiddleware
+from routers import integrations as integration_routes
 
 routers = ( 
     socket_routes, audio_routes, gallery_routes,

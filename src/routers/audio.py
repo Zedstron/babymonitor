@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Request
-from controllers.audio import AudioController
 
 def create_router(sio):
     router = APIRouter(prefix="/api/audio")

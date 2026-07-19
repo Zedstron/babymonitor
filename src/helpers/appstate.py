@@ -4,6 +4,7 @@ from aiortc import RTCPeerConnection
 from typing import Dict, List, Optional
 from helpers.utils import quick_speed_test
 from controllers.gpio import GPIOController
+from controllers.media import MediaController
 from aiortc.contrib.media import MediaRecorder
 from controllers.audio import AudioController, MicrophoneTrack
 from controllers.camera import CameraController, CameraVideoTrack
@@ -17,6 +18,7 @@ class AppState:
         self.audio = AudioController()
         self.camera = CameraController()
         self.gpio = GPIOController()
+        self.media = MediaController()
 
         self.vtrack = CameraVideoTrack(self.camera)
         self.atrack = MicrophoneTrack(self.audio)

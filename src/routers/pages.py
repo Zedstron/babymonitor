@@ -5,9 +5,7 @@ from sqlalchemy.orm import Session
 
 from helpers.tokenizer import create_token
 from controllers.wireguard import WireGuard
-from controllers.media import MediaController
 from fastapi.templating import Jinja2Templates
-from controllers.camera import CameraController
 from helpers.utils import get_hostname, get_storage
 from controllers.weather import get_current_weather
 from controllers.resources import get_system_health
@@ -76,12 +74,10 @@ def create_router(_):
     return router
 
 def get_template_context(state) -> dict:
-    camera = CameraController()
-    recordings_data = camera.get_recordings()
-    snapshots_data = camera.get_snapshots(limit=20)
+    recordings_data = state.camera.get_recordings()
+    snapshots_data = state.camera.get_snapshots(limit=20)
 
     wireguard = WireGuard()
-    media = MediaController()
 
     return {
         "profile": state.user_profile,
@@ -89,7 +85,7 @@ def get_template_context(state) -> dict:
         "settings": state.settings,
         "latency": "N/A",
         "notifications": state.notifications[-10:],
-        "lullabies": media.getlist(),
+        "lullabies": state.media.getlist(),
         "recordings": recordings_data["items"],
         "recording_count": recordings_data["count"],
         "available_dates": recordings_data["available_dates"],
